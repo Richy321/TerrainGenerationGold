@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
   octet::app::init_all(argc, argv);
 
   // our application.
-  octet::TerrainGeneration app(argc, argv);
+  Terrain::TerrainGeneration app(argc, argv);
   app.init();
 
   // open windows

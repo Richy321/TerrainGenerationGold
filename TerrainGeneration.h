@@ -27,8 +27,8 @@ namespace Terrain
 
 
 			octet::vec3 size(100.0f, 0.0f, 100.0f);
-			octet::ivec3 dimensions(20, 0, 20);
-			CustomTerrain::Algorithm genAlgorithm = CustomTerrain::DiamondSquare;
+			octet::ivec3 dimensions(5, 0, 5);
+			CustomTerrain::Algorithm genAlgorithm = CustomTerrain::MidpointDisplacement;
 
 
 			//change camera pos
@@ -52,13 +52,10 @@ namespace Terrain
 			get_viewport_size(vx, vy);
 			app_scene->begin_render(vx, vy);
 
-
-
 			// update matrices. assume 30 fps.
 			app_scene->update(1.0f / 30);
 
 			HandleKeyboardControl();
-
 
 			// draw the scene
 			app_scene->render((float)vx / vy);

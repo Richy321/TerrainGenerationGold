@@ -14,7 +14,7 @@ namespace Terrain
 
 		static CustomTerrain* Generate(CustomTerrain::Algorithm algorithmType, octet::vec3 size, octet::ivec3 dimensions)
 		{
-			return new CustomTerrain(size, dimensions);
+			return new CustomTerrain(size, dimensions, algorithmType);
 		}
 	};
 }

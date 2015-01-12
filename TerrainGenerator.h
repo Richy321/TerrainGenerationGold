@@ -2,8 +2,6 @@
 class TerrainGenerator
 {
 private:
-	T
-
 public:
 
 	TerrainGenerator()

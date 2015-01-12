@@ -1,15 +1,21 @@
 #pragma once
-class TerrainGenerator
+
+#include "CustomTerrain.h" 
+
+namespace Terrain
 {
-private:
-public:
-
-	TerrainGenerator()
+	class TerrainGenerator
 	{
-	}
+	public:
+		TerrainGenerator()
+		{
 
-	~TerrainGenerator()
-	{
-	}
-};
+		}
+
+		static CustomTerrain* Generate(CustomTerrain::Algorithm algorithmType, octet::vec3 size, octet::ivec3 dimensions)
+		{
+			return new CustomTerrain(size, dimensions);
+		}
+	};
+}
 

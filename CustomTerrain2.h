@@ -126,13 +126,37 @@ public:
 		{
 			for (int z = 0; z <= dimensions.z(); ++z)
 			{
-				vertices[x * (dimensions.z()+1) + z].pos.y() = map[x][z];
+				int index = x * (dimensions.z() + 1) + z;
+				vertices[index].pos.y() = map[x][z];
+			}
+		}
+
+		//calc norms based on nearest neighbouring heights
+		//http://www.flipcode.com/archives/Calculating_Vertex_Normals_for_Height_Maps.shtml
+
+		for (int z = 0; z <= dimensions.z(); ++z)
+		{
+			for (int x = 0; x <= dimensions.x(); ++x)
+			{
+				float nX = map[x < dimensions.x() ? x + 1 : x][z] - map[x > 0 ? x- 1 : x][z];
+				if (x == 0 || x == dimensions.x())
+					nX *= 2;
+				
+				float nZ = map[x][z < dimensions.z() ? z + 1 : z] - map[x][z > 0 ? z- 1 : z];
+				if (z == 0 || z == dimensions.z())
+					nZ *= 2;
+
+				int index = x * (dimensions.z() + 1) + z;
+				vertices[index].normal.x() = nX;
+				vertices[index].normal.y() = 2;
+				vertices[index].normal.z() = nZ;
+				vertices[index].normal.normalize();
 			}
 		}
 
 		set_vertices(vertices);
 		set_indices(indices);
-		this->set_mode(GL_LINES);
+		//this->set_mode(GL_LINES);
 	}
 
 	void MidpointDisplacementAlgorithm(octet::dynarray<CustomVertex>& vertices)
@@ -140,17 +164,10 @@ public:
 		octet::vec2 from(0, 0);
 		octet::vec2 to(dimensions.x(), dimensions.z());
 
-		
-
 		map[0][0] = rand.get(0.0f, scale);
 		map[dimensions.x()][0] = rand.get(0.0f, scale);
-		map[0][dimensions.y()] = rand.get(0.0f, scale);
-		map[dimensions.x()][dimensions.y()] = rand.get(0.0f, scale);
-
-		//vertices[0].pos.y() = rand.get(0.0f, scale);
-		//vertices[dimensions.x()].pos.y() = rand.get(0.0f, scale);
-		//vertices[vertices.size() - 1 - dimensions.z()].pos.y() = rand.get(0.0f, scale);
-		//vertices[vertices.size()-1].pos.y() = rand.get(0.0f, scale);
+		map[0][dimensions.z()] = rand.get(0.0f, scale);
+		map[dimensions.x()][dimensions.z()] = rand.get(0.0f, scale);
 
 		midpoint(from, to, scale);
 	}
@@ -247,9 +264,7 @@ public:
 	
 	void midpoint(octet::vec2 from, octet::vec2 to, float scale)
 	{
-		/*	
-
-
+		
 		//stop clause
 		octet::vec2 diff = to - from;
 
@@ -271,41 +286,39 @@ public:
 		octet::vec2 mp = (from + to) * 0.5f;
 
 		//set mean values of corners of parent triangle
+		float meanLeft = (map[topLeft.x()][topLeft.y()] + map[bottomLeft.x()][bottomLeft.y()]) * 0.5f;
+		map[left.x()][left.y()] = meanLeft + rand.get(0.0f, scale);
 
-		float meanLeft = (vertices[GetVertexIndex(topLeft)].pos.y() + vertices[GetVertexIndex(bottomLeft)].pos.y()) * 0.5f;
-		vertices[GetVertexIndex(left)].pos.y() = meanLeft + rand.get(0.0f, scale);
+		float meanBottom = (map[bottomLeft.x()][bottomLeft.y()] + map[bottomRight.x()][bottomRight.y()]) *0.5f;
+		map[bottom.x()][bottom.y()] = meanBottom + rand.get(0.0f, scale);
 
-		float meanBottom = (vertices[GetVertexIndex(bottomLeft)].pos.y() + vertices[GetVertexIndex(bottomRight)].pos.y()) *0.5f;
-		vertices[GetVertexIndex(bottom)].pos.y() = meanBottom + rand.get(0.0f, scale);
+		float meanTop = (map[topLeft.x()][topLeft.y()] + map[topRight.x()][topRight.y()]) *0.5f;
+		map[top.x()][top.y()] = meanTop + rand.get(0.0f, scale);
 
-		float meanTop = (vertices[GetVertexIndex(topLeft)].pos.y() + vertices[GetVertexIndex(topRight)].pos.y()) *0.5f;
-		vertices[GetVertexIndex(top)].pos.y() = meanTop + rand.get(0.0f, scale);
-
-		float meanRight = (vertices[GetVertexIndex(topRight)].pos.y() + vertices[GetVertexIndex(bottomRight)].pos.y()) *0.5f;
-		vertices[GetVertexIndex(right)].pos.y() = meanRight + rand.get(0.0f, scale);
+		float meanRight = (map[topRight.x()][topRight.y()] + map[bottomRight.x()][bottomRight.y()]) *0.5f;
+		map[right.x()][right.y()] = meanRight + rand.get(0.0f, scale);
 
 		
 
 		//displace center point
-		float displacementAmount = (vertices[GetVertexIndex(topLeft)].pos.y() + vertices[GetVertexIndex(bottomLeft)].pos.y() + vertices[GetVertexIndex(topRight)].pos.y() + vertices[GetVertexIndex(bottomRight)].pos.y()) * 0.25f + rand.get(0.0f, scale);
-		vertices[GetVertexIndex(mp)].pos.y() = displacementAmount;
+		float displacementAmount = ((map[topLeft.x()][topLeft.y()] + map[bottomLeft.x()][bottomLeft.y()] + map[topRight.x()][topRight.y()] + map[bottomRight.x()][bottomRight.y()]) * 0.25f) + rand.get(0.0f, scale);
+		map[mp.x()][mp.y()] = displacementAmount;
 
 		scale *= scaleModifier;
 
 		//split into 4
 
 		//bottom left quarter
-		midpoint(vertices, bottomLeft, mp, scale);
+		midpoint(bottomLeft, mp, scale);
 
 		//top left quarter
-		midpoint(vertices, left, top, scale);
+		midpoint(left, top, scale);
 
 		//top right quarter
-		midpoint(vertices, mp, topRight, scale);
+		midpoint(mp, topRight, scale);
 
 		//bottom right quarter
-		midpoint(vertices, bottom, right, scale);
-		*/
+		midpoint(bottom, right, scale);
 	}
 	
 

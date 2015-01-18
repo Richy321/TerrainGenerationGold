@@ -34,7 +34,6 @@ namespace Terrain
 
 		float scale = 100.0f;
 
-
 		Algorithm algorithmType = Algorithm::MidpointDisplacement;
 
 		CustomTerrain(octet::vec3 size, octet::ivec3 dimensions, Algorithm algorithmType) : mesh(), dimensions(dimensions)
@@ -72,7 +71,7 @@ namespace Terrain
 				{
 					octet::vec3 xz = octet::vec3((float)x, 0, (float)z) * bb_delta;
 
-					octet::vec3 normal(0,1,0);
+					octet::vec3 normal(0.0f, 1.0f, 0.0f);
 					octet::vec3 uvw(0);
 					vertex vert(xz, normal, uvw);
 
@@ -101,10 +100,10 @@ namespace Terrain
 			{
 
 				case Algorithm::MidpointDisplacement:
-					MidpointDisplacementAlgorithm(vertices);
+					//MidpointDisplacementAlgorithm(vertices);
 					break;
 				case Algorithm::DiamondSquare:
-					DiamondSquareAlgorithm(vertices);
+					//DiamondSquareAlgorithm(vertices);
 					break;
 			}
 
@@ -176,7 +175,6 @@ namespace Terrain
 
 			//assign hieght value to each of the four corners
 			vertices[0].pos = octet::vec3(vertices[0].pos.x(), rndCornerHeight, vertices[0].pos.z());
-
 		}
 	};
 }

@@ -7,7 +7,7 @@ namespace Terrain
 	{
 		// scene for drawing box
 		octet::ref<octet::visual_scene> app_scene;
-		CustomTerrain* terrain;
+		CustomTerrain2* terrain;
 		octet::camera_instance *camera;				  /// main camera instance 
 
 	public:
@@ -27,8 +27,8 @@ namespace Terrain
 
 
 			octet::vec3 size(100.0f, 0.0f, 100.0f);
-			octet::ivec3 dimensions(5, 0, 5);
-			CustomTerrain::Algorithm genAlgorithm = CustomTerrain::MidpointDisplacement;
+			octet::ivec3 dimensions(32, 0, 32);
+			CustomTerrain2::Algorithm genAlgorithm = CustomTerrain2::MidpointDisplacement;
 
 
 			//change camera pos
@@ -41,6 +41,8 @@ namespace Terrain
 
 			terrain = TerrainGenerator::Generate(genAlgorithm, size, dimensions);
 
+
+			//terrain->set_mode(GL_LINES);
 			app_scene->add_child(node);
 			app_scene->add_mesh_instance(new octet::mesh_instance(node, terrain, green));
 		}

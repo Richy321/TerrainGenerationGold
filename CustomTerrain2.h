@@ -11,6 +11,8 @@ private:
 	octet::ivec3 dimensions;
 	octet::vec3 size;
 
+	std::vector<std::vector<float>> map;
+
 public:
 	enum Algorithm
 	{
@@ -35,9 +37,8 @@ public:
 
 	Algorithm algorithmType = Algorithm::MidpointDisplacement;
 
-	float scale = 1.0f;
-	float roughnessFrom = -20.0f;
-	float roughnessTo = 20.0f;
+	float scale = 10.0f;
+	float scaleModifier = 0.7f;
 
 	CustomTerrain2(octet::vec3 size, octet::ivec3 dimensions, Algorithm algorithmType)
 	{
@@ -53,13 +54,14 @@ public:
 		set_default_attributes();
 		set_aabb(octet::aabb(octet::vec3(0, 0, 0), size));
 		
+		map.resize(dimensions.x() +1, std::vector<float>(dimensions.z() +1, 0.0f));
+
 		update();
 	}
 
 	~CustomTerrain2()
 	{
 	}
-
 
 	void update() override
 	{
@@ -112,11 +114,20 @@ public:
 		{
 
 			case Algorithm::MidpointDisplacement:
-				MidpointDisplacementAlgorithm(vertices);
+				MidpointDisplacementAlgorithm2(vertices);
 				break;
 			case Algorithm::DiamondSquare:
 				//DiamondSquareAlgorithm(vertices);
 				break;
+		}
+
+		//Set points into the vertex structure
+		for (int x = 0; x <= dimensions.x(); ++x)
+		{
+			for (int z = 0; z <= dimensions.z(); ++z)
+			{
+				vertices[x * (dimensions.z()+1) + z].pos.y() = map[x][z];
+			}
 		}
 
 		set_vertices(vertices);
@@ -129,12 +140,104 @@ public:
 		octet::vec2 from(0, 0);
 		octet::vec2 to(dimensions.x(), dimensions.z());
 
-		vertices[0].pos.y() = rand.get(roughnessFrom, roughnessTo);
-		vertices[dimensions.x()].pos.y() = rand.get(roughnessFrom, roughnessTo);
-		vertices[vertices.size() - 1 - dimensions.z()].pos.y() = rand.get(roughnessFrom, roughnessTo);
-		vertices[vertices.size()-1].pos.y() = rand.get(roughnessFrom, roughnessTo);
+		
 
-		midpoint(vertices, from, to, scale);
+		map[0][0] = rand.get(0.0f, scale);
+		map[dimensions.x()][0] = rand.get(0.0f, scale);
+		map[0][dimensions.y()] = rand.get(0.0f, scale);
+		map[dimensions.x()][dimensions.y()] = rand.get(0.0f, scale);
+
+		//vertices[0].pos.y() = rand.get(0.0f, scale);
+		//vertices[dimensions.x()].pos.y() = rand.get(0.0f, scale);
+		//vertices[vertices.size() - 1 - dimensions.z()].pos.y() = rand.get(0.0f, scale);
+		//vertices[vertices.size()-1].pos.y() = rand.get(0.0f, scale);
+
+		midpoint(from, to, scale);
+	}
+
+
+	void MidpointDisplacementAlgorithm2(octet::dynarray<CustomVertex>& vertices)
+	{
+		const unsigned hgrid = 33,//x dimension of the grid
+			vgrid = hgrid;//y dimension of the grid
+
+		int	i, j, k,//iterators
+			x, y,//location variables
+			sgrid = ((hgrid < vgrid) ? hgrid : vgrid) - 1,//whichever is smaller (minus 1)
+			offset = sgrid / 2;//offset is the width of the square or diamond we are working with
+
+
+		//set the four corners
+		for (i = 0; i<vgrid; i += sgrid){
+			for (j = 0; j<hgrid; j += sgrid){
+				map[j][i] = 10.0f + rand.get(0.0f, 2.0f);
+			}
+		}
+
+
+		float range = 50.0f,//range for random numbers
+			rangeModifier = 0.7f,//the range is multipiled by this number each pass, making the map smoother
+			total,//variable for storing a mean value
+			temp;//stores the new value for a slot so more calculations can be done
+
+		bool oddy, oddx;//these are used to tell if we're working with a side or center
+
+		float min = 10000.0f;
+		float max = 0.0f;//for averaging
+
+		//get started
+		//2.1 while the size of the squares is larger than 1...
+		while (offset > 0)
+		{
+			oddy = false;
+
+			for (y = 0; y < vgrid; y += offset, oddy = !oddy)
+			{
+				oddx = false;
+
+				for (x = 0; x < hgrid; x += offset, oddx = !oddx)
+				{
+					if (oddx || oddy)
+					{
+						//if this is a center...
+						if (oddx && oddy)
+						{
+							//this point gets the average of its four corners plus a small 'error'
+							temp = (map[x - offset][y - offset] + map[x + offset][y - offset] + map[x - offset][y + offset] + map[x + offset][y + offset]) / 4 + rand.get(0.0f, range);
+						}
+
+						//if this is a side...
+						else
+						{
+							//horizontal side
+							if (oddx)
+							{
+								temp = (map[x - offset][y] + map[x + offset][y]) / 2 + rand.get(0.0f, range);
+							}
+
+							//vertical side
+							else
+							{
+								temp = (map[x][y - offset] + map[x][y + offset]) / 2 + rand.get(0.0f, range);
+							}
+						}
+
+						//set the value
+						map[x][y] = temp;
+
+						//now that we have a value, check min and max
+						if (temp > max)
+							max = temp;
+						if (temp < min)
+							min = temp;
+					}
+				}
+			}
+
+			//adjust the range and offset
+			range *= rangeModifier;
+			offset /= 2;
+		}
 	}
 
 	int GetVertexIndex(const octet::vec2 posCoord)
@@ -142,12 +245,15 @@ public:
 		return posCoord.x() * dimensions.z() + posCoord.y();
 	}
 	
-	void midpoint(octet::dynarray<CustomVertex>& vertices, octet::vec2 from, octet::vec2 to, float scale)
+	void midpoint(octet::vec2 from, octet::vec2 to, float scale)
 	{
+		/*	
+
+
 		//stop clause
 		octet::vec2 diff = to - from;
-		float length = diff.length();
-		if (length <= 2)
+
+		if (diff.x() <= 1 || diff.y() <= 1)
 			return;
 
 		//Divide into quarters
@@ -156,7 +262,7 @@ public:
 		octet::vec2 bottomLeft = octet::vec2(from.x(), from.y());
 		octet::vec2 bottomRight = octet::vec2(to.x(), from.y());
 
-		octet::vec2 left = (topLeft - bottomLeft) * 0.5;
+		octet::vec2 left = (topLeft - bottomLeft) * 0.5f;
 		octet::vec2 top = (topRight - topLeft) * 0.5f;
 		octet::vec2 right = (topRight - bottomRight) *0.5f;
 		octet::vec2 bottom = (bottomRight - bottomLeft) * 0.5f;
@@ -167,25 +273,24 @@ public:
 		//set mean values of corners of parent triangle
 
 		float meanLeft = (vertices[GetVertexIndex(topLeft)].pos.y() + vertices[GetVertexIndex(bottomLeft)].pos.y()) * 0.5f;
-		vertices[GetVertexIndex(left)].pos.y() = meanLeft;
+		vertices[GetVertexIndex(left)].pos.y() = meanLeft + rand.get(0.0f, scale);
 
 		float meanBottom = (vertices[GetVertexIndex(bottomLeft)].pos.y() + vertices[GetVertexIndex(bottomRight)].pos.y()) *0.5f;
-		vertices[GetVertexIndex(bottom)].pos.y() = meanBottom;
+		vertices[GetVertexIndex(bottom)].pos.y() = meanBottom + rand.get(0.0f, scale);
 
 		float meanTop = (vertices[GetVertexIndex(topLeft)].pos.y() + vertices[GetVertexIndex(topRight)].pos.y()) *0.5f;
-		vertices[GetVertexIndex(top)].pos.y() = meanTop;
+		vertices[GetVertexIndex(top)].pos.y() = meanTop + rand.get(0.0f, scale);
 
 		float meanRight = (vertices[GetVertexIndex(topRight)].pos.y() + vertices[GetVertexIndex(bottomRight)].pos.y()) *0.5f;
-		vertices[GetVertexIndex(right)].pos.y() = meanRight;
+		vertices[GetVertexIndex(right)].pos.y() = meanRight + rand.get(0.0f, scale);
 
-		float displacementAmount = rand.get(roughnessFrom, roughnessTo);
-		displacementAmount *= scale;
+		
 
 		//displace center point
-		displacementAmount += (vertices[GetVertexIndex(topLeft)].pos.y() + vertices[GetVertexIndex(bottomLeft)].pos.y() + vertices[GetVertexIndex(topRight)].pos.y() + vertices[GetVertexIndex(bottomRight)].pos.y()) * 0.25f;
+		float displacementAmount = (vertices[GetVertexIndex(topLeft)].pos.y() + vertices[GetVertexIndex(bottomLeft)].pos.y() + vertices[GetVertexIndex(topRight)].pos.y() + vertices[GetVertexIndex(bottomRight)].pos.y()) * 0.25f + rand.get(0.0f, scale);
 		vertices[GetVertexIndex(mp)].pos.y() = displacementAmount;
 
-		scale *= 0.5f;
+		scale *= scaleModifier;
 
 		//split into 4
 
@@ -200,6 +305,7 @@ public:
 
 		//bottom right quarter
 		midpoint(vertices, bottom, right, scale);
+		*/
 	}
 	
 

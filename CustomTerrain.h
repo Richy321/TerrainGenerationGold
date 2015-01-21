@@ -1,6 +1,5 @@
 #pragma once
 #include "../../octet.h"
-#include "TerrainGenerator.h"
 #include "PerlinNoiseGenerator.h"
 
 #include <ctime>
@@ -50,7 +49,7 @@ namespace Terrain
 			}
 		};
 
-		Algorithm algorithmType = Algorithm::MidpointDisplacement;
+		Algorithm algorithmType = Algorithm::FractionalBrownianMotion;
 
 		float scale = 10.0f;
 		float scaleModifier = 0.7f;
@@ -62,7 +61,6 @@ namespace Terrain
 			algorithmToFunction[Algorithm::PerlinNoise] = &CustomTerrain::PerlinNoiseAlgorithm;
 			algorithmToFunction[Algorithm::FractionalBrownianMotion] = &CustomTerrain::FractionalBrownianMotionAlgorithm;
 		}
-
 
 		CustomTerrain(octet::vec3 size, octet::ivec3 dimensions, Algorithm algorithmType)
 		{

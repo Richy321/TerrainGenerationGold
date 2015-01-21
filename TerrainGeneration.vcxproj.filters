@@ -36,6 +36,9 @@
     <Filter Include="octet\resources">
       <UniqueIdentifier>{f85a3f01-4932-410d-b0e9-3861cb4ebf0d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="shaders">
+      <UniqueIdentifier>{558e4fb4-20d5-4ccd-be7e-71b09997f596}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -431,7 +434,6 @@
       <Filter>octet\containers</Filter>
     </ClInclude>
     <ClInclude Include="TerrainGeneration.h" />
-    <ClInclude Include="TerrainGenerator.h" />
     <ClInclude Include="CustomTerrain.h" />
     <ClInclude Include="PerlinNoiseGenerator.h" />
   </ItemGroup>

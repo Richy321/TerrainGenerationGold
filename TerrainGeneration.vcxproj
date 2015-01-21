@@ -218,7 +218,6 @@
     <ClInclude Include="CustomTerrain.h" />
     <ClInclude Include="PerlinNoiseGenerator.h" />
     <ClInclude Include="TerrainGeneration.h" />
-    <ClInclude Include="TerrainGenerator.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\resources\mesh_builder.inl" />

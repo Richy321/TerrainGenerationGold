@@ -1,4 +1,4 @@
-#include "TerrainGenerator.h"
+#include "CustomTerrain.h"
 
 namespace Terrain
 {

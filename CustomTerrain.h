@@ -31,6 +31,10 @@ namespace Terrain
 
 		std::vector<std::vector<float>> heightMap;
 		std::unordered_map<Algorithm, pMemberFunc_t> algorithmToFunction;
+		
+		octet::material *customMaterial;
+
+
 
 	public:
 
@@ -53,6 +57,9 @@ namespace Terrain
 
 		float scale = 10.0f;
 		float scaleModifier = 0.7f;
+
+
+		octet::material* GetMaterial() { return customMaterial; }
 
 		void InitialiseAlgorithmDispatchMap()
 		{
@@ -79,6 +86,10 @@ namespace Terrain
 			set_aabb(octet::aabb(octet::vec3(0, 0, 0), size));
 
 			heightMap.resize(dimensions.x() + 1, std::vector<float>(dimensions.z() + 1, 0.0f));
+
+			octet::param_shader* shader = new octet::param_shader("shaders/default.vs", "shaders/default_solid.fs");
+
+			customMaterial = new octet::material(octet::vec4(0, 1, 0, 1), shader);
 
 			update();
 		}

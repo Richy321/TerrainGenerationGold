@@ -8,7 +8,7 @@ namespace Terrain
 		// scene for drawing box
 		octet::ref<octet::visual_scene> app_scene;
 		CustomTerrain* terrain;
-		octet::camera_instance *camera;				  /// main camera instance 
+		octet::camera_instance *camera; /// main camera instance 
 
 	public:
 		/// this is called when we construct the class before everything is initialised.
@@ -36,7 +36,7 @@ namespace Terrain
 			camera->get_node()->rotate(-35, octet::vec3(1, 0, 0));
 			camera->get_node()->translate(octet::vec3(size.x(), -size.z(), 400.0f));
 			
-			terrain = TerrainGenerator::Generate(genAlgorithm, size, dimensions);
+			terrain = new CustomTerrain(size, dimensions, genAlgorithm);
 
 			//terrain->set_mode(GL_LINES);
 			app_scene->add_child(node);

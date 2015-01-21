@@ -27,7 +27,7 @@ namespace Terrain
 
 			octet::vec3 size(100.0f, 0.0f, 100.0f);
 			octet::ivec3 dimensions(32, 0, 32);
-			CustomTerrain::Algorithm genAlgorithm = CustomTerrain::MidpointDisplacement;
+			CustomTerrain::Algorithm genAlgorithm = CustomTerrain::Algorithm::FractionalBrownianMotion;
 
 			//change camera pos
 			camera = app_scene->get_camera_instance(0);

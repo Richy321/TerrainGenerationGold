@@ -87,9 +87,14 @@ namespace Terrain
 
 			heightMap.resize(dimensions.x() + 1, std::vector<float>(dimensions.z() + 1, 0.0f));
 
-			octet::param_shader* shader = new octet::param_shader("shaders/default.vs", "shaders/default_solid.fs");
 
-			customMaterial = new octet::material(octet::vec4(0, 1, 0, 1), shader);
+			octet::image *img = new octet::image("assets/grass.jpg");
+
+			octet::param_shader* shader = new octet::param_shader("shaders/default.vs", "src/examples/terrain-generation/shaders/MultiLayerTerrain.fs");
+
+			//customMaterial = new octet::material(octet::vec4(0, 1, 0, 1), shader);
+
+			customMaterial = new octet::material(img);
 
 			update();
 		}
@@ -113,17 +118,24 @@ namespace Terrain
 			bb_delta.y() = 0;
 			octet::vec3 uv_min = octet::vec3(0);
 			octet::vec3 uv_delta = octet::vec3(30.0f / dimf.x(), 30.0f / dimf.z(), 0);
+			
+			float fTextureU = float(dimensions.z())*0.01f;
+			float fTextureV = float(dimensions.x())*0.01f;
+
 			for (int x = 0; x <= dimensions.x(); ++x)
 			{
 				for (int z = 0; z <= dimensions.z(); ++z)
 				{
+					float fScaleC = float(z) / float(dimensions.z());
+					float fScaleR = float(x) / float(dimensions.x());
+
 					octet::vec3 xz = octet::vec3((float)x, 0, (float)z) * bb_delta;
 					CustomVertex vertex;
-
 					vertex.pos = xz;
 					vertex.normal = octet::vec3(0.0f, 1.0f, 0.0f);
-					vertex.uv = octet::vec2(x * uv_delta.x(), z * uv_delta.y());
-
+					vertex.uv = octet::vec2(fTextureU*fScaleC, fTextureV*fScaleR);
+					//vertex.uv = octet::vec2(x * uv_delta.x(), z * uv_delta.y());
+					//vertex.uv = (uv_min + octet::vec3((float)vertex.pos.x(), (float)vertex.pos.z(), 0) * uv_delta).xy();
 					vertices.push_back(vertex);
 				}
 			}

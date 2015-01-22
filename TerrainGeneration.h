@@ -1,4 +1,4 @@
-#include "TerrainGenerator.h"
+#include "CustomTerrain.h"
 
 namespace Terrain
 {
@@ -8,7 +8,9 @@ namespace Terrain
 		// scene for drawing box
 		octet::ref<octet::visual_scene> app_scene;
 		CustomTerrain* terrain;
-		octet::camera_instance *camera;				  /// main camera instance 
+		octet::camera_instance *camera; /// main camera instance 
+
+		octet::mouse_look mouseLookHelper;
 
 	public:
 		/// this is called when we construct the class before everything is initialised.
@@ -21,6 +23,8 @@ namespace Terrain
 		{
 			app_scene = new octet::visual_scene();
 			app_scene->create_default_camera_and_lights();
+
+			mouseLookHelper.init(this, 200.0f / 360.0f, false);
 
 			octet::material *green = new octet::material(octet::vec4(0, 1, 0, 1));
 			octet::scene_node *node = new octet::scene_node();
@@ -36,11 +40,11 @@ namespace Terrain
 			camera->get_node()->rotate(-35, octet::vec3(1, 0, 0));
 			camera->get_node()->translate(octet::vec3(size.x(), -size.z(), 400.0f));
 			
-			terrain = TerrainGenerator::Generate(genAlgorithm, size, dimensions);
+			terrain = new CustomTerrain(size, dimensions, genAlgorithm);
 
 			//terrain->set_mode(GL_LINES);
 			app_scene->add_child(node);
-			app_scene->add_mesh_instance(new octet::mesh_instance(node, terrain, green));
+			app_scene->add_mesh_instance(new octet::mesh_instance(node, terrain, terrain->GetMaterial()));
 		}
 
 		/// this is called to draw the world
@@ -48,6 +52,9 @@ namespace Terrain
 		{
 			int vx = 0, vy = 0;
 			get_viewport_size(vx, vy);
+
+			update();
+
 			app_scene->begin_render(vx, vy);
 
 			// update matrices. assume 30 fps.
@@ -59,12 +66,19 @@ namespace Terrain
 			app_scene->render((float)vx / vy);
 		}
 
+		void update()
+		{
+			octet::scene_node *camera_node = camera->get_node();
+			octet::mat4t &camera_to_world = camera_node->access_nodeToParent();
+			mouseLookHelper.update(camera_to_world);
+		}
+
 		void HandleKeyboardControl()
 		{
-			if (is_key_down('W')){
+			if (is_key_down('Q')){
 				app_scene->get_camera_instance(0)->get_node()->access_nodeToParent().translate(0, 2.5, 0);
 			}
-			else if (is_key_down('S')){
+			else if (is_key_down('E')){
 				app_scene->get_camera_instance(0)->get_node()->access_nodeToParent().translate(0, -2.5, 0);
 			}
 			else if (is_key_down('A')){
@@ -73,11 +87,16 @@ namespace Terrain
 			else if (is_key_down('D')){
 				app_scene->get_camera_instance(0)->get_node()->access_nodeToParent().translate(2.5, 0, 0);
 			}
-			else if (is_key_down('Q')){
+			else if (is_key_down('W')){
 				app_scene->get_camera_instance(0)->get_node()->access_nodeToParent().translate(0, 0, -2.5);
 			}
-			else if (is_key_down('E')){
+			else if (is_key_down('S')){
 				app_scene->get_camera_instance(0)->get_node()->access_nodeToParent().translate(0, 0, 2.5);
+			}
+			
+			if (is_key_down(octet::key_esc))
+			{
+				exit(1);
 			}
 		}
 	};

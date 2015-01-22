@@ -80,6 +80,5 @@ namespace Terrain
 				app_scene->get_camera_instance(0)->get_node()->access_nodeToParent().translate(0, 0, 2.5);
 			}
 		}
-
 	};
 }

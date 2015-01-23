@@ -35,7 +35,7 @@ namespace Terrain
 		
 		octet::material *customMaterial;
 
-
+		octet::ref<octet::param_uniform> heightRange;
 
 	public:
 
@@ -89,14 +89,14 @@ namespace Terrain
 
 			heightMap.resize(dimensions.x() + 1, std::vector<float>(dimensions.z() + 1, 0.0f));
 
-
 			//octet::image *img = new octet::image("assets/grass.jpg");
+			//customMaterial = new octet::material(img);
 
 			octet::param_shader* shader = new octet::param_shader("shaders/default.vs", "src/examples/terrain-generation/shaders/MultiLayerTerrain.fs");
-
 			customMaterial = new octet::material(octet::vec4(0, 1, 0, 1), shader);
-
-			//customMaterial = new octet::material(img);
+			
+			octet::atom_t atom_heightRange = octet::app_utils::get_atom("heightRange");
+			heightRange = customMaterial->add_uniform(nullptr, atom_heightRange, GL_FLOAT_VEC2, 1, octet::param::stage_fragment);
 
 			update();
 		}
@@ -164,6 +164,9 @@ namespace Terrain
 			pMemberFunc_t algFunc = algorithmToFunction[algorithmType];
 			(this->*algFunc)(heightMap);
 
+			float min = 999999.0f;
+			float max = -999999.0f;
+
 			//Set points into the vertex structure
 			for (int x = 0; x <= dimensions.x(); ++x)
 			{
@@ -171,6 +174,9 @@ namespace Terrain
 				{
 					int index = x * (dimensions.z() + 1) + z;
 					vertices[index].pos.y() = heightMap[x][z];
+
+					min = vertices[index].pos.y() < min ? vertices[index].pos.y() : min;
+					max = vertices[index].pos.y() > max ? vertices[index].pos.y() : max;
 				}
 			}
 
@@ -196,6 +202,9 @@ namespace Terrain
 					vertices[index].normal.normalize();
 				}
 			}
+
+			octet::vec2 heights(min, max);
+			customMaterial->set_uniform(heightRange, &heights, sizeof(heights));
 
 			set_vertices(vertices);
 			set_indices(indices);
@@ -385,10 +394,10 @@ namespace Terrain
 		{
 			float gain = 0.65f;
 			float lacunarity = 2.0f;
-			unsigned octaves = 4;
+			unsigned octaves = 16;
 			PerlinNoiseGenerator noise;
 			
-			for (int y = 0; y < dimensions.y() + 1; y++)
+			for (int y = 0; y < dimensions.z() + 1; y++)
 			{
 				for (int x = 0; x < dimensions.x() + 1; x++)
 				{

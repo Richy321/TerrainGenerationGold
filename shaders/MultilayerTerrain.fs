@@ -8,6 +8,8 @@ uniform vec4 lighting[17];
 uniform int num_lights;
 uniform vec4 diffuse;
 
+uniform vec2 heightRange;
+
 // inputs
 varying vec2 uv_;
 varying vec3 normal_;
@@ -19,16 +21,16 @@ void main()
 {
   vec3 nnormal = normalize(normal_);
 
-  float fRange1 = 0.33;
-  vec4 cRange1 = vec4(0.0, 0.0, 1.0, 1.0); 
-  float fRange2 = 0.66;  
-  vec4 cRange2 = vec4(0.5, 0.5, 0.0, 1.0);
-  float fRange3 = 1.0;
-  vec4 cRange3 = vec4(0.0, 0.0, 0.0, 1.0);
-  
-  float minHeight = -100;
-  float maxHeight = 100;
-  float range = maxHeight - minHeight;
+  vec4 cRange0 = vec4(34.0/255.0,139.0/255.0,34.0/255.0, 1.0); //floor
+  float fRange1 = 0.25;
+  vec4 cRange1 = vec4(102.0/255.0, 51.0/255.0, 0.0, 1.0); 
+  float fRange2 = 0.5;  
+  vec4 cRange2 = vec4(128.0/255.0, 109.0/255.0, 109.0/255.0, 1.0);
+  float fRange3 = 0.75;
+  vec4 cRange3 = vec4(168.0/255.0, 167.0/255.0, 167.0/255.0, 1.0);
+  vec4 cRange4 = vec4(1.0, 1.0, 1.0, 1.0);
+
+  float range = heightRange.y - heightRange.x;
   
   vec3 npos = camera_pos_;
   vec3 diffuse_light = lighting[0].xyz;
@@ -41,9 +43,16 @@ void main()
     diffuse_light += diffuse_factor * light_color;
   }
 
-  float heightPercent = (model_pos_.y - minHeight) / range;
+  float heightPercentage = (model_pos_.y - heightRange.x) / range;
+  if(heightPercentage < fRange1)
+    diffuse = mix(cRange0, cRange1, (heightPercentage - 0) / (fRange1 - 0));
+  else if(heightPercentage < fRange2)
+    diffuse = mix(cRange1, cRange2, (heightPercentage - fRange1) / (fRange2 - fRange1));
+  else if(heightPercentage < fRange3)
+   diffuse = mix(cRange2, cRange3, (heightPercentage - fRange2) / (fRange3 - fRange2));
+  else
+   diffuse = mix(cRange3, cRange4, (heightPercentage - fRange3) / (1.0 - fRange3));      
 
-  diffuse = mix(cRange1, cRange2, heightPercent);
   gl_FragColor = vec4(diffuse.xyz * diffuse_light, 1.0);
 
 }

@@ -99,6 +99,5 @@ namespace Terrain
 				exit(1);
 			}
 		}
-
 	};
 }

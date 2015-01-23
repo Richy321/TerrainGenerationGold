@@ -20,7 +20,8 @@ namespace Terrain
 			MidpointDisplacement,
 			DiamondSquare,
 			PerlinNoise,
-			FractionalBrownianMotion
+			FractionalBrownianMotion,
+			MultiFractal,
 		};
 
 	private:
@@ -67,6 +68,7 @@ namespace Terrain
 			algorithmToFunction[Algorithm::DiamondSquare] = &CustomTerrain::DiamondSquareAlgorithm;
 			algorithmToFunction[Algorithm::PerlinNoise] = &CustomTerrain::PerlinNoiseAlgorithm;
 			algorithmToFunction[Algorithm::FractionalBrownianMotion] = &CustomTerrain::FractionalBrownianMotionAlgorithm;
+			algorithmToFunction[Algorithm::MultiFractal] = &CustomTerrain::MultiFractalAlgorithm;
 		}
 
 		CustomTerrain(octet::vec3 size, octet::ivec3 dimensions, Algorithm algorithmType)
@@ -161,23 +163,6 @@ namespace Terrain
 			//dispatch to correct algorithm
 			pMemberFunc_t algFunc = algorithmToFunction[algorithmType];
 			(this->*algFunc)(heightMap);
-
-
-			/*
-			switch (algorithmType)
-			{
-
-			case Algorithm::MidpointDisplacement:
-			MidpointDisplacementAlgorithm(heightMap);
-			//MidpointDisplacementAlgorithmRecursive(heightMap);
-			break;
-			case Algorithm::DiamondSquare:
-			//DiamondSquareAlgorithm(heightMap);
-			break;
-			case Algorithm::PerlinNoise:
-			PerlinNoiseAlgorithm(heightMap);
-			break;
-			}*/
 
 			//Set points into the vertex structure
 			for (int x = 0; x <= dimensions.x(); ++x)
@@ -285,6 +270,12 @@ namespace Terrain
 			//bottom right quarter
 			midpointRecurse(bottom, right, scale, map);
 		}
+
+		int GetVertexIndex(const octet::vec2 posCoord)
+		{
+			return (int)(posCoord.x() * dimensions.z() + posCoord.y());
+		}
+
 		void MidpointDisplacementAlgorithm(std::vector<std::vector<float>> &map)
 		{
 			const unsigned hgrid = dimensions.x() + 1,//x dimension of the grid
@@ -369,46 +360,41 @@ namespace Terrain
 			}
 		}
 
-		int GetVertexIndex(const octet::vec2 posCoord)
-		{
-			return (int)(posCoord.x() * dimensions.z() + posCoord.y());
-		}
-
 		void DiamondSquareAlgorithm(std::vector<std::vector<float>> &map)
 		{
-			/*
-			float rndCornerHeight = rand.get(40.0f, 50.0f);
-
-			//assign hieght value to each of the four corners
-			vertices[0].pos = octet::vec3(vertices[0].pos.x(), rndCornerHeight, vertices[0].pos.z());
-			*/
 		}
 
 
 		void PerlinNoiseAlgorithm(std::vector<std::vector<float>> &map)
 		{
+			PerlinNoiseGenerator noise;
+			float frequency = 1.0f / (float)(dimensions.x() + 1);
 
-
+			for (int y = 0; y < dimensions.x() + 1; y++)
+			{
+				for (int x = 0; x < dimensions.x() + 1; x++)
+				{
+					float noiseValue = noise.GenerateNoise((float)x * frequency, (float)y * frequency);
+					map[x][y] = noiseValue * 100;
+				}
+			}
 		}
 
 
 		void FractionalBrownianMotionAlgorithm(std::vector<std::vector<float>> &map)
 		{
-			const unsigned hgrid = dimensions.x() + 1,//x dimension of the grid
-				vgrid = hgrid;//y dimension of the grid
-
 			float gain = 0.65f;
 			float lacunarity = 2.0f;
-			unsigned octaves = 16;
+			unsigned octaves = 4;
 			PerlinNoiseGenerator noise;
 			
-			for (int y = 0; y < vgrid; y++)
+			for (int y = 0; y < dimensions.y() + 1; y++)
 			{
-				for (int x = 0; x < hgrid; x++)
+				for (int x = 0; x < dimensions.x() + 1; x++)
 				{
 					//for each pixel, get the value
 					float total = 0.0f;
-					float frequency = 1.0f / (float)hgrid;
+					float frequency = 1.0f / (float)(dimensions.x() + 1);
 					float amplitude = gain;
 
 					for (int i = 0; i < octaves; ++i)
@@ -422,6 +408,12 @@ namespace Terrain
 					map[x][y] = total * 100;
 				}
 			}
+		}
+
+		void MultiFractalAlgorithm(std::vector<std::vector<float>> &map)
+		{
+
+
 		}
 	};
 }

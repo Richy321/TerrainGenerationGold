@@ -88,13 +88,13 @@ namespace Terrain
 			heightMap.resize(dimensions.x() + 1, std::vector<float>(dimensions.z() + 1, 0.0f));
 
 
-			octet::image *img = new octet::image("assets/grass.jpg");
+			//octet::image *img = new octet::image("assets/grass.jpg");
 
 			octet::param_shader* shader = new octet::param_shader("shaders/default.vs", "src/examples/terrain-generation/shaders/MultiLayerTerrain.fs");
 
-			//customMaterial = new octet::material(octet::vec4(0, 1, 0, 1), shader);
+			customMaterial = new octet::material(octet::vec4(0, 1, 0, 1), shader);
 
-			customMaterial = new octet::material(img);
+			//customMaterial = new octet::material(img);
 
 			update();
 		}

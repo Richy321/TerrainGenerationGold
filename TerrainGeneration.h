@@ -99,6 +99,11 @@ namespace Terrain
 				app_scene->get_camera_instance(0)->get_node()->access_nodeToParent().translate(0, 0, 2.5);
 			}
 			
+			if (is_key_going_down('R'))
+			{
+				terrain->usePerlinRandom = !terrain->usePerlinRandom;
+			}
+
 
 			for (int i = 0; i <= CustomTerrain::Algorithm::MultiFractal; i++)
 			{

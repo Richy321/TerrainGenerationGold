@@ -48,12 +48,22 @@ namespace Terrain
 				gradients[i][1] = octet::sin(PI_DIV_4 * (float)i);
 			}
 
+			RandomisePermutations();
+		}
+
+		~PerlinNoiseGenerator()
+		{
+
+		}
+
+		void RandomisePermutations()
+		{
 			//randomise numbers table
 			for (int i = 0; i < 256; i++)
 			{
 				permutations[i] = i;
 			}
-			
+
 			for (int i = 0; i < 256; i++)
 			{
 				int j = GetRandom(0, 255);
@@ -61,11 +71,6 @@ namespace Terrain
 				permutations[i] = permutations[j];
 				permutations[j] = k;
 			}
-		}
-
-		~PerlinNoiseGenerator()
-		{
-
 		}
 
 		float GenerateNoise(float x, float y)

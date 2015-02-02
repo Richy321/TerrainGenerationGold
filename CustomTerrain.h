@@ -42,6 +42,8 @@ namespace Terrain
 	private:
 
 		octet::random rand;
+		PerlinNoiseGenerator noise;
+
 		octet::ivec3 dimensions;
 		octet::vec3 size;
 
@@ -59,8 +61,9 @@ namespace Terrain
 	public:
 
 		Algorithm algorithmType;
-
 		float heightScale = 50.0f;
+		bool usePerlinRandom = false;
+
 
 		octet::material* GetMaterial() { return customMaterial; }
 
@@ -162,7 +165,6 @@ namespace Terrain
 			//this->set_mode(GL_LINES);
 		}
 
-
 		void buildPlane()
 		{
 			vertices.reserve((dimensions.x() + 1) * (dimensions.z() + 1));
@@ -224,16 +226,19 @@ namespace Terrain
 		{
 			int gridSize = ((dimensions.x() + 1 < dimensions.z() + 1) ? dimensions.x() + 1 : dimensions.z() + 1) - 1;
 			int offset = gridSize / 2;//offset is the width of the square we're working on
-			octet::vec2 randomRange(-1.0f, 1.0f);
 			float rangeModifier = 0.7f; //modifier on the range to smooth
+			float randomScale = 1.0f;
 			bool isOddY, isOddX; //these are used to tell if we're working with a side or center
+
+			if (usePerlinRandom)
+				noise.RandomisePermutations();
 
 			//set the four corners
 			for (int i = 0; i < dimensions.z() + 1; i += gridSize)
 			{
 				for (int j = 0; j < dimensions.x() + 1; j += gridSize)
 				{
-					map[j][i] = rand.get(randomRange.x(), randomRange.y());
+					map[j][i] = rand.get(-1.0f, 1.0f);//GetRandom(i,j);
 				}
 			}
 
@@ -255,7 +260,7 @@ namespace Terrain
 							if (isOddX && isOddY)
 							{
 								//average the four corners plus a small random amount (error)
-								height = (map[x - offset][y - offset] + map[x + offset][y - offset] + map[x - offset][y + offset] + map[x + offset][y + offset]) / 4 + rand.get(randomRange.x(), randomRange.y());
+								height = (map[x - offset][y - offset] + map[x + offset][y - offset] + map[x - offset][y + offset] + map[x + offset][y + offset]) / 4 + GetRandom(x, y) * randomScale;
 							}
 							else
 							{
@@ -263,12 +268,12 @@ namespace Terrain
 								if (isOddX)
 								{
 									//average horizontal sides corners plus small random amount (error)
-									height = (map[x - offset][y] + map[x + offset][y]) / 2 + rand.get(randomRange.x(), randomRange.y());
+									height = (map[x - offset][y] + map[x + offset][y]) / 2 + GetRandom(x,y) * randomScale;
 								}
 								else
 								{
 									//average this vertical side corners plus small random amount (error)
-									height = (map[x][y - offset] + map[x][y + offset]) / 2 + rand.get(randomRange.x(), randomRange.y());
+									height = (map[x][y - offset] + map[x][y + offset]) / 2 + GetRandom(x, y) * randomScale;
 								}
 							}
 
@@ -279,7 +284,7 @@ namespace Terrain
 				}
 
 				//adjust the range and offset
-				randomRange *= rangeModifier;
+				randomScale *= rangeModifier;
 				offset /= 2;
 			}
 		}
@@ -288,23 +293,25 @@ namespace Terrain
 		{
 			int gridSize = ((dimensions.x() + 1 < dimensions.z() + 1) ? dimensions.x() + 1 : dimensions.z() + 1) - 1;
 			int sampleSize = gridSize;//offset is the width of the square we're working on
-			float scale = 1.0f;
-			octet::vec2 randomRange(-1.0f, 1.0f);
-		
+			float scale = 1.0f;	
 
 			float* map = new float[dimensions.x() * dimensions.z()];
-			//randomise initial values
+
+			if(usePerlinRandom)
+				noise.RandomisePermutations();
+
+			//Set four corners
 			for (int y = 0; y < dimensions.z() + 1; y += sampleSize)
 			{
 				for (int x = 0; x < dimensions.x() + 1; x += sampleSize)
 				{
-					SetSample(x, y, rand.get(randomRange.x(), randomRange.y()), map);
+					SetSample(x, y, rand.get(-1.0f, 1.0f)/*GetRandom(x,y)*/, map);
 				}
 			}		
 
 			while (sampleSize > 1)
 			{
-				DiamondSquareCore(sampleSize, scale, randomRange, map);
+				DiamondSquareCore(sampleSize, scale, map);
 
 				sampleSize /= 2;
 				scale /= 2.0f;
@@ -323,7 +330,7 @@ namespace Terrain
 			delete map;
 		}
 
-		void DiamondSquareCore(int stepSize, float scale, octet::vec2 randomRange, float* map)
+		void DiamondSquareCore(int stepSize, float scale, float* map)
 		{
 			int halfStep = stepSize / 2;
 
@@ -331,7 +338,7 @@ namespace Terrain
 			{
 				for (int x = halfStep; x < dimensions.x() + 1 + halfStep; x += stepSize)
 				{
-					SampleSquare(x, y, stepSize, rand.get(randomRange.x(), randomRange.y()) * scale, map);
+					SampleSquare(x, y, stepSize, GetRandom(x,y) * scale, map);
 				}
 			}
 
@@ -339,8 +346,8 @@ namespace Terrain
 			{
 				for (int x = 0; x < dimensions.x() + 1; x += stepSize)
 				{
-					SampleDiamond(x + halfStep, y, stepSize, rand.get(randomRange.x(), randomRange.y()) * scale, map);
-					SampleDiamond(x, y + halfStep, stepSize, rand.get(randomRange.x(), randomRange.y()) * scale, map);
+					SampleDiamond(x + halfStep, y, stepSize, GetRandom(x,y) * scale, map);
+					SampleDiamond(x, y + halfStep, stepSize, GetRandom(x,y) * scale, map);
 				}
 			}
 		}
@@ -381,7 +388,7 @@ namespace Terrain
 
 		void PerlinNoiseAlgorithm(std::vector<std::vector<float>> &map)
 		{
-			PerlinNoiseGenerator noise;
+			noise.RandomisePermutations();
 			float frequency = 5.0f / (float)(dimensions.x() + 1);
 
 			for (int y = 0; y < dimensions.x() + 1; y++)
@@ -399,8 +406,8 @@ namespace Terrain
 			float gain = 0.65f;
 			float lacunarity = 2.0f;
 			unsigned octaves = 16;
-			PerlinNoiseGenerator noise;
-			
+			noise.RandomisePermutations();
+
 			for (int y = 0; y < dimensions.z() + 1; y++)
 			{
 				for (int x = 0; x < dimensions.x() + 1; x++)
@@ -427,6 +434,16 @@ namespace Terrain
 		{
 
 
+		}
+
+		float GetRandom(int x, int y)
+		{
+			float frequency = 5.0f / (float)(dimensions.x() + 1);
+
+			if (usePerlinRandom)
+				return noise.GenerateNoise((float)x * frequency, (float)y * frequency);
+			else
+				return rand.get(-1.0f, 1.0f);
 		}
 	};
 }

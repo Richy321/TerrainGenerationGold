@@ -21,7 +21,7 @@ namespace Terrain
 			DiamondSquare,
 			PerlinNoise,
 			FractionalBrownianMotion,
-			MultiFractal,
+			MultiFractal
 		};
 
 	private:
@@ -54,11 +54,9 @@ namespace Terrain
 			}
 		};
 
-		Algorithm algorithmType = Algorithm::FractionalBrownianMotion;
+		Algorithm algorithmType;
 
-		float scale = 10.0f;
-		float scaleModifier = 0.7f;
-
+		float heightScale = 50.0f;
 
 		octet::material* GetMaterial() { return customMaterial; }
 
@@ -89,9 +87,6 @@ namespace Terrain
 
 			heightMap.resize(dimensions.x() + 1, std::vector<float>(dimensions.z() + 1, 0.0f));
 
-			//octet::image *img = new octet::image("assets/grass.jpg");
-			//customMaterial = new octet::material(img);
-
 			octet::param_shader* shader = new octet::param_shader("shaders/default.vs", "src/examples/terrain-generation/shaders/MultiLayerTerrain.fs");
 			customMaterial = new octet::material(octet::vec4(0, 1, 0, 1), shader);
 			
@@ -100,7 +95,6 @@ namespace Terrain
 
 			update();
 		}
-
 
 		~CustomTerrain()
 		{
@@ -173,7 +167,7 @@ namespace Terrain
 				for (int z = 0; z <= dimensions.z(); ++z)
 				{
 					int index = x * (dimensions.z() + 1) + z;
-					vertices[index].pos.y() = heightMap[x][z];
+					vertices[index].pos.y() = heightMap[x][z] * heightScale;
 
 					min = vertices[index].pos.y() < min ? vertices[index].pos.y() : min;
 					max = vertices[index].pos.y() > max ? vertices[index].pos.y() : max;
@@ -211,75 +205,6 @@ namespace Terrain
 			//this->set_mode(GL_LINES);
 		}
 
-		void MidpointDisplacementAlgorithmRecursive(std::vector<std::vector<float>> &map)
-		{
-			octet::vec2 from(0, 0);
-			octet::vec2 to(dimensions.x(), dimensions.z());
-
-			map[0][0] = rand.get(0.0f, scale);
-			map[dimensions.x()][0] = rand.get(0.0f, scale);
-			map[0][dimensions.z()] = rand.get(0.0f, scale);
-			map[dimensions.x()][dimensions.z()] = rand.get(0.0f, scale);
-
-			midpointRecurse(from, to, scale, map);
-		}
-
-		void midpointRecurse(octet::vec2 from, octet::vec2 to, float scale, std::vector<std::vector<float>> &map)
-		{
-			//stop clause
-			octet::vec2 diff = to - from;
-
-			if (diff.x() <= 1 || diff.y() <= 1)
-				return;
-
-			//Divide into quarters
-			octet::vec2 topLeft = octet::vec2(from.x(), to.y());
-			octet::vec2 topRight = octet::vec2(to.x(), to.y());
-			octet::vec2 bottomLeft = octet::vec2(from.x(), from.y());
-			octet::vec2 bottomRight = octet::vec2(to.x(), from.y());
-
-			octet::vec2 left = (topLeft - bottomLeft) * 0.5f;
-			octet::vec2 top = (topRight - topLeft) * 0.5f;
-			octet::vec2 right = (topRight - bottomRight) *0.5f;
-			octet::vec2 bottom = (bottomRight - bottomLeft) * 0.5f;
-
-			//middle point
-			octet::vec2 mp = (from + to) * 0.5f;
-
-			//set mean values of corners of parent triangle
-			float meanLeft = (map[topLeft.x()][topLeft.y()] + map[bottomLeft.x()][bottomLeft.y()]) * 0.5f;
-			map[left.x()][left.y()] = meanLeft + rand.get(0.0f, scale);
-
-			float meanBottom = (map[bottomLeft.x()][bottomLeft.y()] + map[bottomRight.x()][bottomRight.y()]) *0.5f;
-			map[bottom.x()][bottom.y()] = meanBottom + rand.get(0.0f, scale);
-
-			float meanTop = (map[topLeft.x()][topLeft.y()] + map[topRight.x()][topRight.y()]) *0.5f;
-			map[top.x()][top.y()] = meanTop + rand.get(0.0f, scale);
-
-			float meanRight = (map[topRight.x()][topRight.y()] + map[bottomRight.x()][bottomRight.y()]) *0.5f;
-			map[right.x()][right.y()] = meanRight + rand.get(0.0f, scale);
-
-			//displace center point
-			float displacementAmount = ((map[topLeft.x()][topLeft.y()] + map[bottomLeft.x()][bottomLeft.y()] + map[topRight.x()][topRight.y()] + map[bottomRight.x()][bottomRight.y()]) * 0.25f) + rand.get(0.0f, scale);
-			map[mp.x()][mp.y()] = displacementAmount;
-
-			scale *= scaleModifier;
-
-			//split into 4
-
-			//bottom left quarter
-			midpointRecurse(bottomLeft, mp, scale, map);
-
-			//top left quarter
-			midpointRecurse(left, top, scale, map);
-
-			//top right quarter
-			midpointRecurse(mp, topRight, scale, map);
-
-			//bottom right quarter
-			midpointRecurse(bottom, right, scale, map);
-		}
-
 		int GetVertexIndex(const octet::vec2 posCoord)
 		{
 			return (int)(posCoord.x() * dimensions.z() + posCoord.y());
@@ -287,92 +212,159 @@ namespace Terrain
 
 		void MidpointDisplacementAlgorithm(std::vector<std::vector<float>> &map)
 		{
-			const unsigned hgrid = dimensions.x() + 1,//x dimension of the grid
-				vgrid = hgrid;//y dimension of the grid
-
-			int	i, j, //iterators
-				x, y,//location variables
-				sgrid = ((hgrid < vgrid) ? hgrid : vgrid) - 1,//whichever is smaller (minus 1)
-				offset = sgrid / 2;//offset is the width of the square or diamond we are working with
-
+			int gridSize = ((dimensions.x() + 1 < dimensions.z() + 1) ? dimensions.x() + 1 : dimensions.z() + 1) - 1;
+			int offset = gridSize / 2;//offset is the width of the square we're working on
+			octet::vec2 randomRange(-1.0f, 1.0f);
+			float rangeModifier = 0.7f; //modifier on the range to smooth
+			bool isOddY, isOddX; //these are used to tell if we're working with a side or center
 
 			//set the four corners
-			for (i = 0; i < vgrid; i += sgrid){
-				for (j = 0; j < hgrid; j += sgrid){
-					map[j][i] = 10.0f + rand.get(0.0f, 2.0f);
+			for (int i = 0; i < dimensions.z() + 1; i += gridSize)
+			{
+				for (int j = 0; j < dimensions.x() + 1; j += gridSize)
+				{
+					map[j][i] = rand.get(randomRange.x(), randomRange.y());
 				}
 			}
 
-
-			float range = 50.0f,//range for random numbers
-				rangeModifier = 0.7f,//the range is multipiled by this number each pass, making the map smoother
-				total,//variable for storing a mean value
-				temp;//stores the new value for a slot so more calculations can be done
-
-			bool oddy, oddx;//these are used to tell if we're working with a side or center
-
-			float min = 10000.0f;
-			float max = 0.0f;//for averaging
-
-			//get started
-			//2.1 while the size of the squares is larger than 1...
 			while (offset > 0)
 			{
-				oddy = false;
+				isOddY = false;
 
-				for (y = 0; y < vgrid; y += offset, oddy = !oddy)
+				for (int y = 0; y < dimensions.z() + 1; y += offset, isOddY = !isOddY)
 				{
-					oddx = false;
+					isOddX = false;
 
-					for (x = 0; x < hgrid; x += offset, oddx = !oddx)
+					for (int x = 0; x < dimensions.x() + 1; x += offset, isOddX = !isOddX)
 					{
-						if (oddx || oddy)
+						if (isOddX || isOddY)
 						{
-							//if this is a center...
-							if (oddx && oddy)
+							float height = 0.0f;
+							
+							// center
+							if (isOddX && isOddY)
 							{
-								//this point gets the average of its four corners plus a small 'error'
-								temp = (map[x - offset][y - offset] + map[x + offset][y - offset] + map[x - offset][y + offset] + map[x + offset][y + offset]) / 4 + rand.get(0.0f, range);
+								//average the four corners plus a small random amount (error)
+								height = (map[x - offset][y - offset] + map[x + offset][y - offset] + map[x - offset][y + offset] + map[x + offset][y + offset]) / 4 + rand.get(randomRange.x(), randomRange.y());
 							}
-
-							//if this is a side...
 							else
 							{
-								//horizontal side
-								if (oddx)
+								//side 
+								if (isOddX)
 								{
-									temp = (map[x - offset][y] + map[x + offset][y]) / 2 + rand.get(0.0f, range);
+									//average horizontal sides corners plus small random amount (error)
+									height = (map[x - offset][y] + map[x + offset][y]) / 2 + rand.get(randomRange.x(), randomRange.y());
 								}
-
-								//vertical side
 								else
 								{
-									temp = (map[x][y - offset] + map[x][y + offset]) / 2 + rand.get(0.0f, range);
+									//average this vertical side corners plus small random amount (error)
+									height = (map[x][y - offset] + map[x][y + offset]) / 2 + rand.get(randomRange.x(), randomRange.y());
 								}
 							}
 
 							//set the value
-							map[x][y] = temp;
-
-							//now that we have a value, check min and max
-							if (temp > max)
-								max = temp;
-							if (temp < min)
-								min = temp;
+							map[x][y] = height;
 						}
 					}
 				}
 
 				//adjust the range and offset
-				range *= rangeModifier;
+				randomRange *= rangeModifier;
 				offset /= 2;
 			}
 		}
 
-		void DiamondSquareAlgorithm(std::vector<std::vector<float>> &map)
+		void DiamondSquareAlgorithm(std::vector<std::vector<float>> &vectorMap)
 		{
+			int gridSize = ((dimensions.x() + 1 < dimensions.z() + 1) ? dimensions.x() + 1 : dimensions.z() + 1) - 1;
+			int sampleSize = gridSize;//offset is the width of the square we're working on
+			float scale = 1.0f;
+			octet::vec2 randomRange(-1.0f, 1.0f);
+		
+
+			float* map = new float[dimensions.x() * dimensions.z()];
+			//randomise initial values
+			for (int y = 0; y < dimensions.z() + 1; y += sampleSize)
+			{
+				for (int x = 0; x < dimensions.x() + 1; x += sampleSize)
+				{
+					SetSample(x, y, rand.get(randomRange.x(), randomRange.y()), map);
+				}
+			}		
+
+			while (sampleSize > 1)
+			{
+				DiamondSquareCore(sampleSize, scale, randomRange, map);
+
+				sampleSize /= 2;
+				scale /= 2.0f;
+			}
+
+			//Convert to vector map to fit in with other algorithms
+			for (int x = 0; x < dimensions.x() + 1; x++)
+			{
+				for (int y = 0; y < dimensions.z() + 1; y++)
+				{
+					vectorMap[x][y] = Sample(x, y, map);
+				}
+			}
 		}
 
+		void DiamondSquareCore(int stepSize, float scale, octet::vec2 randomRange, float* map)
+		{
+			int halfStep = stepSize / 2;
+
+			for (int y = halfStep; y < dimensions.z() + 1 + halfStep; y += stepSize)
+			{
+				for (int x = halfStep; x < dimensions.x() + 1 + halfStep; x += stepSize)
+				{
+					SampleSquare(x, y, stepSize, rand.get(randomRange.x(), randomRange.y()) * scale, map);
+				}
+			}
+
+			for (int y = 0; y < dimensions.z() + 1; y += stepSize)
+			{
+				for (int x = 0; x < dimensions.x() + 1; x += stepSize)
+				{
+					SampleDiamond(x + halfStep, y, stepSize, rand.get(randomRange.x(), randomRange.y()) * scale, map);
+					SampleDiamond(x, y + halfStep, stepSize, rand.get(randomRange.x(), randomRange.y()) * scale, map);
+				}
+			}
+		}
+
+		float Sample(int x, int y, float* map)
+		{
+			return map[(x & (dimensions.x() - 1)) + (y & (dimensions.z() - 1)) * dimensions.x()];
+		}
+
+		void SetSample(int x, int y, float value, float* map)
+		{
+			map[(x & (dimensions.x() - 1)) + (y & (dimensions.z() - 1)) * dimensions.x()] = value;
+		}
+
+		void SampleSquare(int x, int y, int size, float value, float* map)
+		{
+			int halfSize = size / 2;
+
+			float topLeft = Sample(x - halfSize, y - halfSize, map);
+			float topRight = Sample(x + halfSize, y - halfSize, map);
+			float bottomLeft = Sample(x - halfSize, y + halfSize, map);
+			float bottomRight = Sample(x + halfSize, y + halfSize, map);
+
+			SetSample(x, y, ((topLeft + topRight + bottomLeft + bottomRight) / 4.0f) + value, map);
+		}
+
+		void SampleDiamond(int x, int y, int size, float value, float* map)
+		{
+			int halfSize = size / 2;
+
+			float left = Sample(x - halfSize, y, map);
+			float right = Sample(x + halfSize, y, map);
+			float top = Sample(x, y - halfSize, map);
+			float bottom = Sample(x, y + halfSize, map);
+
+			SetSample(x, y, ((left + right + top + bottom) / 4.0f) + value, map);
+		}
 
 		void PerlinNoiseAlgorithm(std::vector<std::vector<float>> &map)
 		{
@@ -388,7 +380,6 @@ namespace Terrain
 				}
 			}
 		}
-
 
 		void FractionalBrownianMotionAlgorithm(std::vector<std::vector<float>> &map)
 		{
@@ -406,7 +397,7 @@ namespace Terrain
 					float frequency = 1.0f / (float)(dimensions.x() + 1);
 					float amplitude = gain;
 
-					for (int i = 0; i < octaves; ++i)
+					for (unsigned i = 0; i < octaves; ++i)
 					{
 						total += noise.GenerateNoise((float)x * frequency, (float)y * frequency) * amplitude;
 						frequency *= lacunarity;
@@ -414,7 +405,7 @@ namespace Terrain
 					}
 
 					//now that we have the value, put it in
-					map[x][y] = total * 100;
+					map[x][y] = total;
 				}
 			}
 		}

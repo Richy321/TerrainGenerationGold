@@ -71,8 +71,6 @@ namespace Terrain
 
 		float GenerateNoise(float x, float y)
 		{
-			float rval;
-
 			//Grid definition - get x,y indices relating to the on the grid
 			int x0 = (x > 0.0 ? (int)x : (int)x - 1);
 			int x1 = x0 + 1;
@@ -80,8 +78,8 @@ namespace Terrain
 			int y1 = y0 + 1;
 
 			//determine interpolation weights
-			float fractionalX = x - (double)x0;
-			float fractionalY = y - (double)y0;
+			float fractionalX = x - (float)x0;
+			float fractionalY = y - (float)y0;
 
 			//Get gradient indices for 4 surrounding points (& with number will inclusively cap the number in that range)
 			int grad11 = permutations[(x0 + permutations[y0 & 255]) & 255] & 7;

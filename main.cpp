@@ -25,5 +25,3 @@ int main(int argc, char **argv) {
   // open windows
   octet::app::run_all_apps();
 }
-
-

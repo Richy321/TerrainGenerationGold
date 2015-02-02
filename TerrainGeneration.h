@@ -11,7 +11,7 @@ namespace Terrain
 		octet::camera_instance *camera; /// main camera instance 
 
 		octet::mouse_look mouseLookHelper;
-
+		CustomTerrain::Algorithm genAlgorithm = CustomTerrain::Algorithm::MidpointDisplacement;
 	public:
 		/// this is called when we construct the class before everything is initialised.
 		TerrainGeneration(int argc, char **argv) : app(argc, argv)
@@ -24,14 +24,13 @@ namespace Terrain
 			app_scene = new octet::visual_scene();
 			app_scene->create_default_camera_and_lights();
 
-			mouseLookHelper.init(this, 200.0f / 360.0f, false);
+			mouseLookHelper.init(this, 90.0f / 360.0f, false);
 
 			octet::material *green = new octet::material(octet::vec4(0, 1, 0, 1));
 			octet::scene_node *node = new octet::scene_node();
 
 			octet::vec3 size(100.0f, 0.0f, 100.0f);
 			octet::ivec3 dimensions(32, 0, 32);
-			CustomTerrain::Algorithm genAlgorithm = CustomTerrain::Algorithm::FractionalBrownianMotion;
 
 			//change camera pos
 			camera = app_scene->get_camera_instance(0);
@@ -42,9 +41,15 @@ namespace Terrain
 			
 			terrain = new CustomTerrain(size, dimensions, genAlgorithm);
 
-			//terrain->set_mode(GL_LINES);
 			app_scene->add_child(node);
 			app_scene->add_mesh_instance(new octet::mesh_instance(node, terrain, terrain->GetMaterial()));
+		}
+
+
+		void Generate(CustomTerrain::Algorithm algorithm)
+		{
+			terrain->algorithmType = algorithm;
+			terrain->update();
 		}
 
 		/// this is called to draw the world
@@ -94,6 +99,16 @@ namespace Terrain
 				app_scene->get_camera_instance(0)->get_node()->access_nodeToParent().translate(0, 0, 2.5);
 			}
 			
+
+			for (int i = 0; i <= CustomTerrain::Algorithm::MultiFractal; i++)
+			{
+				if (is_key_going_down(49 + i))
+				{
+					genAlgorithm = (CustomTerrain::Algorithm)i;
+					Generate(genAlgorithm);
+				}
+			}
+
 			if (is_key_down(octet::key_esc))
 			{
 				exit(1);

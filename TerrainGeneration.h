@@ -49,7 +49,7 @@ namespace Terrain
 		void Generate(CustomTerrain::Algorithm algorithm)
 		{
 			terrain->algorithmType = algorithm;
-			terrain->update();
+			terrain->generate();
 		}
 
 		/// this is called to draw the world

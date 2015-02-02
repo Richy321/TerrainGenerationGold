@@ -37,6 +37,7 @@ namespace Terrain
 		{
 			PerlinNoiseGenerator();
 		}
+
 		PerlinNoiseGenerator()
 		{
 			//Create Gradient table
@@ -67,8 +68,6 @@ namespace Terrain
 
 		}
 
-		//float dorGridGradient
-
 		float GenerateNoise(float x, float y)
 		{
 			//Grid definition - get x,y indices relating to the on the grid
@@ -96,7 +95,6 @@ namespace Terrain
 			//Get fade/interp values
 			fractionalX = fade(fractionalX);
 			fractionalY = fade(fractionalY);
-
 
 			//Interpolate on the x axis
 			float interpolatedX1 = lerp(noise11, noise12, fractionalX);

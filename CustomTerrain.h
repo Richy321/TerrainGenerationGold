@@ -24,21 +24,6 @@ namespace Terrain
 			MultiFractal
 		};
 
-	private:
-
-		octet::random rand;
-		octet::ivec3 dimensions;
-		octet::vec3 size;
-
-		std::vector<std::vector<float>> heightMap;
-		std::unordered_map<Algorithm, pMemberFunc_t> algorithmToFunction;
-		
-		octet::material *customMaterial;
-
-		octet::ref<octet::param_uniform> heightRange;
-
-	public:
-
 		struct CustomVertex
 		{
 			octet::vec3 pos;
@@ -53,6 +38,25 @@ namespace Terrain
 				this->uv = uvw.xy();
 			}
 		};
+
+	private:
+
+		octet::random rand;
+		octet::ivec3 dimensions;
+		octet::vec3 size;
+
+		std::vector<std::vector<float>> heightMap;
+		std::unordered_map<Algorithm, pMemberFunc_t> algorithmToFunction;
+		
+		octet::material *customMaterial;
+
+		octet::ref<octet::param_uniform> heightRange;
+
+
+		octet::dynarray<CustomVertex> vertices;
+		octet::dynarray<uint32_t> indices;
+
+	public:
 
 		Algorithm algorithmType;
 
@@ -93,66 +97,17 @@ namespace Terrain
 			octet::atom_t atom_heightRange = octet::app_utils::get_atom("heightRange");
 			heightRange = customMaterial->add_uniform(nullptr, atom_heightRange, GL_FLOAT_VEC2, 1, octet::param::stage_fragment);
 
-			update();
+			generate();
 		}
 
 		~CustomTerrain()
 		{
 		}
 
-		void update() override
+
+		void generate()
 		{
-			octet::dynarray<CustomVertex> vertices;
-			octet::dynarray<uint32_t> indices;
-
-			vertices.reserve((dimensions.x() + 1) * (dimensions.z() + 1));
-
-			octet::vec3 dimf = (octet::vec3)(dimensions);
-			octet::aabb bb = get_aabb();
-			octet::vec3 bb_min = bb.get_min();
-			octet::vec3 bb_delta = bb.get_half_extent() / dimf * 2.0f;
-			bb_delta.y() = 0;
-			octet::vec3 uv_min = octet::vec3(0);
-			octet::vec3 uv_delta = octet::vec3(30.0f / dimf.x(), 30.0f / dimf.z(), 0);
-			
-			float fTextureU = float(dimensions.z())*0.01f;
-			float fTextureV = float(dimensions.x())*0.01f;
-
-			for (int x = 0; x <= dimensions.x(); ++x)
-			{
-				for (int z = 0; z <= dimensions.z(); ++z)
-				{
-					float fScaleC = float(z) / float(dimensions.z());
-					float fScaleR = float(x) / float(dimensions.x());
-
-					octet::vec3 xz = octet::vec3((float)x, 0, (float)z) * bb_delta;
-					CustomVertex vertex;
-					vertex.pos = xz;
-					vertex.normal = octet::vec3(0.0f, 1.0f, 0.0f);
-					vertex.uv = octet::vec2(fTextureU*fScaleC, fTextureV*fScaleR);
-					//vertex.uv = octet::vec2(x * uv_delta.x(), z * uv_delta.y());
-					//vertex.uv = (uv_min + octet::vec3((float)vertex.pos.x(), (float)vertex.pos.z(), 0) * uv_delta).xy();
-					vertices.push_back(vertex);
-				}
-			}
-
-			indices.reserve(dimensions.x() * dimensions.z() * 6);
-
-			int stride = dimensions.x() + 1;
-			for (int x = 0; x < dimensions.x(); ++x)
-			{
-				for (int z = 0; z < dimensions.z(); ++z)
-				{
-					// 01 11
-					// 00 10
-					indices.push_back((x + 0) + (z + 0)*stride);
-					indices.push_back((x + 0) + (z + 1)*stride);
-					indices.push_back((x + 1) + (z + 0)*stride);
-					indices.push_back((x + 1) + (z + 0)*stride);
-					indices.push_back((x + 0) + (z + 1)*stride);
-					indices.push_back((x + 1) + (z + 1)*stride);
-				}
-			}
+			buildPlane();
 
 			//dispatch to correct algorithm
 			pMemberFunc_t algFunc = algorithmToFunction[algorithmType];
@@ -197,12 +152,67 @@ namespace Terrain
 				}
 			}
 
+			//pass min and max to shader for hieght colouring
 			octet::vec2 heights(min, max);
 			customMaterial->set_uniform(heightRange, &heights, sizeof(heights));
 
 			set_vertices(vertices);
 			set_indices(indices);
+
 			//this->set_mode(GL_LINES);
+		}
+
+
+		void buildPlane()
+		{
+			vertices.reserve((dimensions.x() + 1) * (dimensions.z() + 1));
+
+			octet::vec3 dimf = (octet::vec3)(dimensions);
+			octet::aabb bb = get_aabb();
+			octet::vec3 bb_min = bb.get_min();
+			octet::vec3 bb_delta = bb.get_half_extent() / dimf * 2.0f;
+			bb_delta.y() = 0;
+			octet::vec3 uv_min = octet::vec3(0);
+			octet::vec3 uv_delta = octet::vec3(30.0f / dimf.x(), 30.0f / dimf.z(), 0);
+
+			float fTextureU = float(dimensions.z())*0.01f;
+			float fTextureV = float(dimensions.x())*0.01f;
+
+			for (int x = 0; x <= dimensions.x(); ++x)
+			{
+				for (int z = 0; z <= dimensions.z(); ++z)
+				{
+					float fScaleC = float(z) / float(dimensions.z());
+					float fScaleR = float(x) / float(dimensions.x());
+
+					octet::vec3 xz = octet::vec3((float)x, 0, (float)z) * bb_delta;
+					CustomVertex vertex;
+					vertex.pos = xz;
+					vertex.normal = octet::vec3(0.0f, 1.0f, 0.0f);
+					vertex.uv = octet::vec2(fTextureU*fScaleC, fTextureV*fScaleR);
+					//vertex.uv = octet::vec2(x * uv_delta.x(), z * uv_delta.y());
+					//vertex.uv = (uv_min + octet::vec3((float)vertex.pos.x(), (float)vertex.pos.z(), 0) * uv_delta).xy();
+					vertices.push_back(vertex);
+				}
+			}
+
+			indices.reserve(dimensions.x() * dimensions.z() * 6);
+
+			int stride = dimensions.x() + 1;
+			for (int x = 0; x < dimensions.x(); ++x)
+			{
+				for (int z = 0; z < dimensions.z(); ++z)
+				{
+					// 01 11
+					// 00 10
+					indices.push_back((x + 0) + (z + 0)*stride);
+					indices.push_back((x + 0) + (z + 1)*stride);
+					indices.push_back((x + 1) + (z + 0)*stride);
+					indices.push_back((x + 1) + (z + 0)*stride);
+					indices.push_back((x + 0) + (z + 1)*stride);
+					indices.push_back((x + 1) + (z + 1)*stride);
+				}
+			}
 		}
 
 		int GetVertexIndex(const octet::vec2 posCoord)
@@ -308,6 +318,9 @@ namespace Terrain
 					vectorMap[x][y] = Sample(x, y, map);
 				}
 			}
+
+			//cleanup
+			delete map;
 		}
 
 		void DiamondSquareCore(int stepSize, float scale, octet::vec2 randomRange, float* map)
@@ -369,14 +382,14 @@ namespace Terrain
 		void PerlinNoiseAlgorithm(std::vector<std::vector<float>> &map)
 		{
 			PerlinNoiseGenerator noise;
-			float frequency = 1.0f / (float)(dimensions.x() + 1);
+			float frequency = 5.0f / (float)(dimensions.x() + 1);
 
 			for (int y = 0; y < dimensions.x() + 1; y++)
 			{
 				for (int x = 0; x < dimensions.x() + 1; x++)
 				{
 					float noiseValue = noise.GenerateNoise((float)x * frequency, (float)y * frequency);
-					map[x][y] = noiseValue * 100;
+					map[x][y] = noiseValue;
 				}
 			}
 		}

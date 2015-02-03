@@ -222,6 +222,7 @@
   <ItemGroup>
     <None Include="..\..\resources\mesh_builder.inl" />
     <None Include="..\..\resources\resources.inl" />
+    <None Include="shaders\MultilayerTerrain.fs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

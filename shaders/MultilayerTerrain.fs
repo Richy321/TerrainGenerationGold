@@ -43,17 +43,19 @@ void main()
     diffuse_light += diffuse_factor * light_color;
   }
 
+
+  vec4 colourDiffuse;
   float heightPercentage = (model_pos_.y - heightRange.x) / range;
   if(heightPercentage < fRange1)
-    diffuse = mix(cRange0, cRange1, (heightPercentage - 0) / (fRange1 - 0));
+    colourDiffuse = mix(cRange0, cRange1, (heightPercentage - 0) / (fRange1 - 0));
   else if(heightPercentage < fRange2)
-    diffuse = mix(cRange1, cRange2, (heightPercentage - fRange1) / (fRange2 - fRange1));
+    colourDiffuse = mix(cRange1, cRange2, (heightPercentage - fRange1) / (fRange2 - fRange1));
   else if(heightPercentage < fRange3)
-   diffuse = mix(cRange2, cRange3, (heightPercentage - fRange2) / (fRange3 - fRange2));
+   colourDiffuse = mix(cRange2, cRange3, (heightPercentage - fRange2) / (fRange3 - fRange2));
   else
-   diffuse = mix(cRange3, cRange4, (heightPercentage - fRange3) / (1.0 - fRange3));      
+   colourDiffuse = mix(cRange3, cRange4, (heightPercentage - fRange3) / (1.0 - fRange3));      
 
-  gl_FragColor = vec4(diffuse.xyz * diffuse_light, 1.0);
+  gl_FragColor = vec4(colourDiffuse.xyz * diffuse_light, 1.0);
 
 }
 

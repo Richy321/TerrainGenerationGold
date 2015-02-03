@@ -444,5 +444,8 @@
     <None Include="..\..\resources\resources.inl">
       <Filter>octet\resources</Filter>
     </None>
+    <None Include="shaders\MultilayerTerrain.fs">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

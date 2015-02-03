@@ -58,12 +58,13 @@ namespace Terrain
 		octet::dynarray<CustomVertex> vertices;
 		octet::dynarray<uint32_t> indices;
 
+		octet::dynarray<octet::ref<octet::image>> terrainLayers;
+
 	public:
 
 		Algorithm algorithmType;
 		float heightScale = 50.0f;
 		bool usePerlinRandom = false;
-
 
 		octet::material* GetMaterial() { return customMaterial; }
 
@@ -74,6 +75,19 @@ namespace Terrain
 			algorithmToFunction[Algorithm::PerlinNoise] = &CustomTerrain::PerlinNoiseAlgorithm;
 			algorithmToFunction[Algorithm::FractionalBrownianMotion] = &CustomTerrain::FractionalBrownianMotionAlgorithm;
 			algorithmToFunction[Algorithm::MultiFractal] = &CustomTerrain::MultiFractalAlgorithm;
+		}
+
+		void InitialiseImageLayers()
+		{
+			terrainLayers.push_back(new octet::image("src/examples/terrain-generation/textures/Water.jpg"));
+			terrainLayers.push_back(new octet::image("src/examples/terrain-generation/textures/Grass.jpg"));
+			terrainLayers.push_back(new octet::image("src/examples/terrain-generation/textures/rock.jpg"));
+			terrainLayers.push_back(new octet::image("src/examples/terrain-generation/textures/snow.jpg"));
+
+			for (int i = 0; i < terrainLayers.size(); i++)
+			{
+				customMaterial->add_sampler(i, octet::app_utils::get_atom("layer" + i), terrainLayers[i], new octet::sampler());
+			}
 		}
 
 		CustomTerrain(octet::vec3 size, octet::ivec3 dimensions, Algorithm algorithmType)
@@ -96,7 +110,8 @@ namespace Terrain
 
 			octet::param_shader* shader = new octet::param_shader("shaders/default.vs", "src/examples/terrain-generation/shaders/MultiLayerTerrain.fs");
 			customMaterial = new octet::material(octet::vec4(0, 1, 0, 1), shader);
-			
+			InitialiseImageLayers();
+
 			octet::atom_t atom_heightRange = octet::app_utils::get_atom("heightRange");
 			heightRange = customMaterial->add_uniform(nullptr, atom_heightRange, GL_FLOAT_VEC2, 1, octet::param::stage_fragment);
 
@@ -105,8 +120,8 @@ namespace Terrain
 
 		~CustomTerrain()
 		{
-		}
 
+		}
 
 		void generate()
 		{

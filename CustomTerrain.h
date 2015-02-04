@@ -5,9 +5,6 @@
 #include <ctime>
 #include <unordered_map>
 
-
-
-
 namespace Terrain
 {
 	class CustomTerrain : public octet::mesh
@@ -26,9 +23,9 @@ namespace Terrain
 
 		struct CustomVertex
 		{
-			octet::vec3 pos;
-			octet::vec3 normal;
-			octet::vec2 uv;
+			octet::vec3p pos;
+			octet::vec3p normal;
+			octet::vec2p uv;
 
 			CustomVertex() { }
 
@@ -79,15 +76,31 @@ namespace Terrain
 
 		void InitialiseImageLayers()
 		{
-			terrainLayers.push_back(new octet::image("src/examples/terrain-generation/textures/Water.jpg"));
-			terrainLayers.push_back(new octet::image("src/examples/terrain-generation/textures/Grass.jpg"));
-			terrainLayers.push_back(new octet::image("src/examples/terrain-generation/textures/rock.jpg"));
-			terrainLayers.push_back(new octet::image("src/examples/terrain-generation/textures/snow.jpg"));
+			//terrainLayers.push_back(new octet::image("src/examples/terrain-generation/textures/Water.jpg"));
+			//terrainLayers.push_back(new octet::image("src/examples/terrain-generation/textures/Grass.jpg"));
+			//terrainLayers.push_back(new octet::image("src/examples/terrain-generation/textures/rock.jpg"));
+			//terrainLayers.push_back(new octet::image("src/examples/terrain-generation/textures/snow.jpg"));
 
+			octet::image *img0 = new octet::image("src/examples/terrain-generation/textures/Water.jpg");
+			customMaterial->add_sampler(0, octet::app_utils::get_atom("layer0"), img0, new octet::sampler());
+
+			octet::image *img1 = new octet::image("src/examples/terrain-generation/textures/Grass.jpg");
+			customMaterial->add_sampler(1, octet::app_utils::get_atom("layer1"), img1, new octet::sampler());
+			
+			octet::image *img2 = new octet::image("src/examples/terrain-generation/textures/Grass.jpg");
+			customMaterial->add_sampler(2, octet::app_utils::get_atom("layer2"), img2, new octet::sampler());
+
+			octet::image *img3 = new octet::image("src/examples/terrain-generation/textures/rock.jpg");
+			customMaterial->add_sampler(3, octet::app_utils::get_atom("layer3"), img3, new octet::sampler());
+
+			octet::image *img4 = new octet::image("src/examples/terrain-generation/textures/snow.jpg");
+			customMaterial->add_sampler(4, octet::app_utils::get_atom("layer4"), img4, new octet::sampler());
+
+			/*
 			for (int i = 0; i < terrainLayers.size(); i++)
 			{
 				customMaterial->add_sampler(i, octet::app_utils::get_atom("layer" + i), terrainLayers[i], new octet::sampler());
-			}
+			}*/
 		}
 
 		CustomTerrain(octet::vec3 size, octet::ivec3 dimensions, Algorithm algorithmType)
@@ -140,10 +153,21 @@ namespace Terrain
 				for (int z = 0; z <= dimensions.z(); ++z)
 				{
 					int index = x * (dimensions.z() + 1) + z;
-					vertices[index].pos.y() = heightMap[x][z] * heightScale;
 
-					min = vertices[index].pos.y() < min ? vertices[index].pos.y() : min;
-					max = vertices[index].pos.y() > max ? vertices[index].pos.y() : max;
+					octet::vec3 pos(vertices[index].pos);
+
+					pos.y() = heightMap[x][z] * heightScale;
+
+					//vertices[index].pos.y() = heightMap[x][z] * heightScale;
+
+
+					vertices[index].pos = pos;
+
+					min = pos.y() < min ? pos.y() : min;
+					max = pos.y() > max ? pos.y() : max;
+
+					//min = vertices[index].pos.y() < min ? vertices[index].pos.y() : min;
+					//max = vertices[index].pos.y() > max ? vertices[index].pos.y() : max;
 				}
 			}
 
@@ -163,10 +187,12 @@ namespace Terrain
 						nZ *= 2;
 
 					int index = x * (dimensions.z() + 1) + z;
-					vertices[index].normal.x() = nX;
-					vertices[index].normal.y() = 2;
-					vertices[index].normal.z() = nZ;
-					vertices[index].normal.normalize();
+
+					vertices[index].normal = octet::vec3(nX, 2, nZ).normalize();
+					//vertices[index].normal.x() = nX;
+					//vertices[index].normal.y() = 2;
+					//vertices[index].normal.z() = nZ;
+					//vertices[index].normal.normalize();
 				}
 			}
 
@@ -176,6 +202,8 @@ namespace Terrain
 
 			set_vertices(vertices);
 			set_indices(indices);
+
+			dump(octet::log(""));
 
 			//this->set_mode(GL_LINES);
 		}
@@ -192,23 +220,18 @@ namespace Terrain
 			octet::vec3 uv_min = octet::vec3(0);
 			octet::vec3 uv_delta = octet::vec3(30.0f / dimf.x(), 30.0f / dimf.z(), 0);
 
-			float fTextureU = float(dimensions.z())*0.01f;
-			float fTextureV = float(dimensions.x())*0.01f;
+			float fTextureUStep = 1.0f / dimensions.x();
+			float fTextureVStep = 1.0f / dimensions.z();
 
 			for (int x = 0; x <= dimensions.x(); ++x)
 			{
 				for (int z = 0; z <= dimensions.z(); ++z)
 				{
-					float fScaleC = float(z) / float(dimensions.z());
-					float fScaleR = float(x) / float(dimensions.x());
-
 					octet::vec3 xz = octet::vec3((float)x, 0, (float)z) * bb_delta;
 					CustomVertex vertex;
 					vertex.pos = xz;
 					vertex.normal = octet::vec3(0.0f, 1.0f, 0.0f);
-					vertex.uv = octet::vec2(fTextureU*fScaleC, fTextureV*fScaleR);
-					//vertex.uv = octet::vec2(x * uv_delta.x(), z * uv_delta.y());
-					//vertex.uv = (uv_min + octet::vec3((float)vertex.pos.x(), (float)vertex.pos.z(), 0) * uv_delta).xy();
+					vertex.uv = octet::vec2(x * fTextureUStep, z * fTextureVStep);
 					vertices.push_back(vertex);
 				}
 			}

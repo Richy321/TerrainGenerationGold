@@ -11,7 +11,7 @@ namespace Terrain
 		octet::camera_instance *camera; /// main camera instance 
 
 		octet::mouse_look mouseLookHelper;
-		CustomTerrain::Algorithm genAlgorithm = CustomTerrain::Algorithm::MidpointDisplacement;
+		CustomTerrain::Algorithm genAlgorithm = CustomTerrain::Algorithm::MultiFractal;
 	public:
 		/// this is called when we construct the class before everything is initialised.
 		TerrainGeneration(int argc, char **argv) : app(argc, argv)

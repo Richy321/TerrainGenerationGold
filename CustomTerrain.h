@@ -21,21 +21,6 @@ namespace Terrain
 			MultiFractal
 		};
 
-		struct CustomVertex
-		{
-			octet::vec3p pos;
-			octet::vec3p normal;
-			octet::vec2p uv;
-
-			CustomVertex() { }
-
-			CustomVertex(octet::vec3_in pos, octet::vec3_in normal, octet::vec3_in uvw) {
-				this->pos = pos;
-				this->normal = normal;
-				this->uv = uvw.xy();
-			}
-		};
-
 	private:
 
 		octet::random rand;
@@ -52,7 +37,7 @@ namespace Terrain
 		octet::ref<octet::param_uniform> heightRange;
 
 
-		octet::dynarray<CustomVertex> vertices;
+		octet::dynarray<vertex> vertices;
 		octet::dynarray<uint32_t> indices;
 
 		octet::dynarray<octet::ref<octet::image>> terrainLayers;
@@ -76,18 +61,13 @@ namespace Terrain
 
 		void InitialiseImageLayers()
 		{
-			//terrainLayers.push_back(new octet::image("src/examples/terrain-generation/textures/Water.jpg"));
-			//terrainLayers.push_back(new octet::image("src/examples/terrain-generation/textures/Grass.jpg"));
-			//terrainLayers.push_back(new octet::image("src/examples/terrain-generation/textures/rock.jpg"));
-			//terrainLayers.push_back(new octet::image("src/examples/terrain-generation/textures/snow.jpg"));
-
-			octet::image *img0 = new octet::image("src/examples/terrain-generation/textures/Water.jpg");
+			octet::image *img0 = new octet::image("src/examples/terrain-generation/textures/water2.jpg");
 			customMaterial->add_sampler(0, octet::app_utils::get_atom("layer0"), img0, new octet::sampler());
 
-			octet::image *img1 = new octet::image("src/examples/terrain-generation/textures/Grass.jpg");
+			octet::image *img1 = new octet::image("src/examples/terrain-generation/textures/sand2.jpg");
 			customMaterial->add_sampler(1, octet::app_utils::get_atom("layer1"), img1, new octet::sampler());
 			
-			octet::image *img2 = new octet::image("src/examples/terrain-generation/textures/Grass.jpg");
+			octet::image *img2 = new octet::image("src/examples/terrain-generation/textures/grass5.jpg");
 			customMaterial->add_sampler(2, octet::app_utils::get_atom("layer2"), img2, new octet::sampler());
 
 			octet::image *img3 = new octet::image("src/examples/terrain-generation/textures/rock.jpg");
@@ -95,12 +75,6 @@ namespace Terrain
 
 			octet::image *img4 = new octet::image("src/examples/terrain-generation/textures/snow.jpg");
 			customMaterial->add_sampler(4, octet::app_utils::get_atom("layer4"), img4, new octet::sampler());
-
-			/*
-			for (int i = 0; i < terrainLayers.size(); i++)
-			{
-				customMaterial->add_sampler(i, octet::app_utils::get_atom("layer" + i), terrainLayers[i], new octet::sampler());
-			}*/
 		}
 
 		CustomTerrain(octet::vec3 size, octet::ivec3 dimensions, Algorithm algorithmType)
@@ -111,7 +85,6 @@ namespace Terrain
 			this->dimensions = dimensions;
 			this->size = size;
 
-			set_default_attributes();
 			__int64 theTime = time(NULL);
 			printf("Time:%i", theTime);
 			rand = octet::random((unsigned)theTime);
@@ -155,29 +128,22 @@ namespace Terrain
 					int index = x * (dimensions.z() + 1) + z;
 
 					octet::vec3 pos(vertices[index].pos);
-
 					pos.y() = heightMap[x][z] * heightScale;
 
-					//vertices[index].pos.y() = heightMap[x][z] * heightScale;
-
-
-					vertices[index].pos = pos;
+					vertices[index].pos = octet::vec3p(pos.x(), pos.y(), pos.z());
 
 					min = pos.y() < min ? pos.y() : min;
 					max = pos.y() > max ? pos.y() : max;
-
-					//min = vertices[index].pos.y() < min ? vertices[index].pos.y() : min;
-					//max = vertices[index].pos.y() > max ? vertices[index].pos.y() : max;
 				}
 			}
-
-			//calc cheap norms based on nearest neighbouring heights
-			//http://www.flipcode.com/archives/Calculating_Vertex_Normals_for_Height_Maps.shtml
 
 			for (int z = 0; z <= dimensions.z(); ++z)
 			{
 				for (int x = 0; x <= dimensions.x(); ++x)
 				{
+					/*
+					//calc cheap norms based on nearest neighbouring heights
+					//http://www.flipcode.com/archives/Calculating_Vertex_Normals_for_Height_Maps.shtml
 					float nX = heightMap[x < dimensions.x() ? x + 1 : x][z] - heightMap[x > 0 ? x - 1 : x][z];
 					if (x == 0 || x == dimensions.x())
 						nX *= 2;
@@ -185,18 +151,46 @@ namespace Terrain
 					float nZ = heightMap[x][z < dimensions.z() ? z + 1 : z] - heightMap[x][z > 0 ? z - 1 : z];
 					if (z == 0 || z == dimensions.z())
 						nZ *= 2;
+					*/
+			
+					int centre = x * (dimensions.z()+1) + z;
+					int east = (x <= (dimensions.x()+1) ? x + 1 : x) * (dimensions.z()+1) + z;
+					int south = x * (dimensions.z()+1) + ((z <= dimensions.z()+1) ? z + 1 : z);
+					int west = (x > 0 ? x - 1 : x) * (dimensions.z()+1) + z;
+					int north = x * (dimensions.z()+1) + (z > 0 ? z - 1 : z);
 
-					int index = x * (dimensions.z() + 1) + z;
+					//Averaged Normals
+					octet::vec3 centrePos = vertices[centre].pos;
+					octet::vec3 eastPos = vertices[east].pos;
+					octet::vec3 southPos = vertices[south].pos;
+					octet::vec3 westPos = vertices[west].pos;
+					octet::vec3 northPos = vertices[north].pos;
 
-					vertices[index].normal = octet::vec3(nX, 2, nZ).normalize();
-					//vertices[index].normal.x() = nX;
-					//vertices[index].normal.y() = 2;
-					//vertices[index].normal.z() = nZ;
-					//vertices[index].normal.normalize();
+					octet::vec3 v1 = north - centre;
+					octet::vec3 v2 = east - centre;
+					octet::vec3 ne = cross(v2, v1);
+
+					v1 = eastPos - centrePos;
+					v2 = southPos - centrePos;
+					octet::vec3 se = cross(v2, v1);
+
+					v1 = southPos - centrePos;
+					v2 = westPos - centrePos;
+					octet::vec3 sw = cross(v2, v1);
+
+					v1 = northPos - centrePos;
+					v2 = westPos - centrePos;
+					octet::vec3 nw = cross(v2, v1);
+
+
+					//octet::vec3 norm(0.0f, 1.0f, 0.0f);
+					octet::vec3 norm = ne + nw + se + sw;
+					norm = norm.normalize();
+					vertices[centre].normal = octet::vec3p(norm);
 				}
 			}
 
-			//pass min and max to shader for hieght colouring
+			//pass min and max to shader for height colouring
 			octet::vec2 heights(min, max);
 			customMaterial->set_uniform(heightRange, &heights, sizeof(heights));
 
@@ -220,18 +214,20 @@ namespace Terrain
 			octet::vec3 uv_min = octet::vec3(0);
 			octet::vec3 uv_delta = octet::vec3(30.0f / dimf.x(), 30.0f / dimf.z(), 0);
 
-			float fTextureUStep = 1.0f / dimensions.x();
-			float fTextureVStep = 1.0f / dimensions.z();
+			float tiling = 0.1f;
+
+			float fTextureUStep = 1.0f / (dimensions.x() * tiling);
+			float fTextureVStep = 1.0f / (dimensions.z() * tiling);
 
 			for (int x = 0; x <= dimensions.x(); ++x)
 			{
 				for (int z = 0; z <= dimensions.z(); ++z)
 				{
 					octet::vec3 xz = octet::vec3((float)x, 0, (float)z) * bb_delta;
-					CustomVertex vertex;
-					vertex.pos = xz;
-					vertex.normal = octet::vec3(0.0f, 1.0f, 0.0f);
-					vertex.uv = octet::vec2(x * fTextureUStep, z * fTextureVStep);
+					vertex vertex;
+					vertex.pos = octet::vec3p(xz);
+					vertex.normal = octet::vec3p(0.0f, 1.0f, 0.0f);
+					vertex.uv = octet::vec2p(x * fTextureUStep, z * fTextureVStep);
 					vertices.push_back(vertex);
 				}
 			}
@@ -343,7 +339,7 @@ namespace Terrain
 			{
 				for (int x = 0; x < dimensions.x() + 1; x += sampleSize)
 				{
-					SetSample(x, y, rand.get(-1.0f, 1.0f)/*GetRandom(x,y)*/, map);
+					SetSample(x, y, GetRandom(x,y), map);
 				}
 			}		
 
@@ -476,7 +472,7 @@ namespace Terrain
 
 		float GetRandom(int x, int y)
 		{
-			float frequency = 5.0f / (float)(dimensions.x() + 1);
+			float frequency = 7.0f / (float)(dimensions.x() + 1);
 
 			if (usePerlinRandom)
 				return noise.GenerateNoise((float)x * frequency, (float)y * frequency);

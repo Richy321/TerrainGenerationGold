@@ -11,7 +11,7 @@ namespace Terrain
 		octet::camera_instance *camera; /// main camera instance 
 
 		octet::mouse_look mouseLookHelper;
-		CustomTerrain::Algorithm genAlgorithm = CustomTerrain::Algorithm::MultiFractal;
+		CustomTerrain::Algorithm genAlgorithm = CustomTerrain::Algorithm::MidpointDisplacement;
 	public:
 		/// this is called when we construct the class before everything is initialised.
 		TerrainGeneration(int argc, char **argv) : app(argc, argv)
@@ -31,6 +31,8 @@ namespace Terrain
 
 			octet::vec3 size(100.0f, 0.0f, 100.0f);
 			octet::ivec3 dimensions(32, 0, 32);
+
+			node->access_nodeToParent().translate(200, 200, 200);
 
 			//change camera pos
 			camera = app_scene->get_camera_instance(0);
@@ -104,7 +106,6 @@ namespace Terrain
 				terrain->usePerlinRandom = !terrain->usePerlinRandom;
 			}
 
-
 			for (int i = 0; i <= CustomTerrain::Algorithm::MultiFractal; i++)
 			{
 				if (is_key_going_down(49 + i))
@@ -113,6 +114,22 @@ namespace Terrain
 					Generate(genAlgorithm);
 				}
 			}
+
+			//Lighting Tests
+			if (is_key_down('J')){
+				app_scene->get_light_instance(0)->get_node()->access_nodeToParent().rotateY(1);
+			}
+			else if (is_key_down('L')){
+				app_scene->get_light_instance(0)->get_node()->access_nodeToParent().rotateY(-1);
+			}
+
+			if (is_key_down('I')){
+				app_scene->get_light_instance(0)->get_node()->access_nodeToParent().rotateX(1);
+			}
+			else if (is_key_down('K')){
+				app_scene->get_light_instance(0)->get_node()->access_nodeToParent().rotateX(-1);
+			}
+
 
 			if (is_key_down(octet::key_esc))
 			{

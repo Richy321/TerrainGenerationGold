@@ -30,7 +30,7 @@ namespace Terrain
 			octet::scene_node *node = new octet::scene_node();
 
 			octet::vec3 size(100.0f, 0.0f, 100.0f);
-			octet::ivec3 dimensions(32, 0, 32);
+			octet::ivec3 dimensions(128, 0, 128);
 
 			node->access_nodeToParent().translate(200, 200, 200);
 

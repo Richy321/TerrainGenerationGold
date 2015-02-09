@@ -158,7 +158,12 @@ namespace Terrain
 					int south = x * (dimensions.z()+1) + ((z <= dimensions.z()+1) ? z + 1 : z);
 					int west = (x > 0 ? x - 1 : x) * (dimensions.z()+1) + z;
 					int north = x * (dimensions.z()+1) + (z > 0 ? z - 1 : z);
-
+					//int centre = (x & dimensions.x()) + (z & (dimensions.z())) * dimensions.x();
+					//int east = ((x+1) & (dimensions.x())) + (z & (dimensions.z())) * dimensions.x();
+					//int south = (x & (dimensions.x())) + ((z+1) & (dimensions.z())) * dimensions.x();
+					//int west = ((x-1) & (dimensions.x())) + (z & (dimensions.z())) * dimensions.x();
+					//int north = (x & (dimensions.x())) + ((z-1) & (dimensions.z())) * dimensions.x();
+					
 					//Averaged Normals
 					octet::vec3 centrePos = vertices[centre].pos;
 					octet::vec3 eastPos = vertices[east].pos;
@@ -166,26 +171,27 @@ namespace Terrain
 					octet::vec3 westPos = vertices[west].pos;
 					octet::vec3 northPos = vertices[north].pos;
 
-					octet::vec3 v1 = north - centre;
-					octet::vec3 v2 = east - centre;
-					octet::vec3 ne = cross(v2, v1);
+					octet::vec3 v1 = northPos - centrePos;
+					octet::vec3 v2 = eastPos - centrePos;
+					octet::vec3 ne = cross(v1, v2);
 
 					v1 = eastPos - centrePos;
 					v2 = southPos - centrePos;
-					octet::vec3 se = cross(v2, v1);
+					octet::vec3 se = cross(v1, v2);
 
 					v1 = southPos - centrePos;
 					v2 = westPos - centrePos;
-					octet::vec3 sw = cross(v2, v1);
+					octet::vec3 sw = cross(v1, v2);
 
 					v1 = northPos - centrePos;
 					v2 = westPos - centrePos;
-					octet::vec3 nw = cross(v2, v1);
+					octet::vec3 nw = cross(v1, v2);
 
 
 					//octet::vec3 norm(0.0f, 1.0f, 0.0f);
 					octet::vec3 norm = ne + nw + se + sw;
-					norm = norm.normalize();
+					//octet::vec3 norm = ne;
+					//norm = norm.normalize();
 					vertices[centre].normal = octet::vec3p(norm);
 				}
 			}
@@ -197,7 +203,7 @@ namespace Terrain
 			set_vertices(vertices);
 			set_indices(indices);
 
-			dump(octet::log(""));
+			//dump(octet::log(""));
 
 			//this->set_mode(GL_LINES);
 		}

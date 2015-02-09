@@ -71,6 +71,6 @@ void main()
     vec4 cRange4 = vec4(texture2D(layer4, vec2(uv_)).xyz, 1.0);
     colourDiffuse = mix(cRange3, cRange4, (heightPercentage - fRange3) / (1.0 - fRange3));      
   }
-  gl_FragColor = vec4(colourDiffuse.xyz /** diffuse_light*/, 1.0);
+  gl_FragColor = vec4(colourDiffuse.xyz * diffuse_light, 1.0);
 }
 
